@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 const root = fileURLToPath(new URL('.', import.meta.url))
 
 /**
- * Multi-page dev: root `index.html` = Poker Dice; `dice-21/index.html` = Dice 21.
+ * Multi-page: `/` redirects to Dice 21; `poker-dice/` = Poker Dice.
  * Prebuilt bundles live under `public/assets/` (served at `/assets/...`).
  */
 export default defineConfig({
@@ -15,8 +15,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(root, 'index.html'),
+        home: resolve(root, 'index.html'),
         dice21: resolve(root, 'dice-21/index.html'),
+        poker: resolve(root, 'poker-dice/index.html'),
       },
     },
   },

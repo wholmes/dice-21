@@ -1,6 +1,6 @@
 # Dice 21 & Poker Dice
 
-Browser games built with [Vite](https://vitejs.dev/) as a small multi-page app: **Poker Dice** at the site root and **Dice 21** under `/dice-21/`. Both can use an optional **Node WebSocket server** for two-player sessions.
+Browser games built with [Vite](https://vitejs.dev/) as a small multi-page app: **Dice 21** is the default at `/` (also `/dice-21/`), and **Poker Dice** lives at `/poker-dice/`. Both can use an optional **Node WebSocket server** for two-player sessions.
 
 ## Requirements
 
@@ -22,10 +22,10 @@ npm run dev
 
 Then open:
 
-| Game        | URL (typical)              |
-|------------|----------------------------|
-| Poker Dice | `http://localhost:5173/`   |
-| Dice 21    | `http://localhost:5173/dice-21/` |
+| Game        | URL (typical) |
+|------------|----------------|
+| Dice 21    | `http://localhost:5173/` (same game at `/dice-21/`) |
+| Poker Dice | `http://localhost:5173/poker-dice/` |
 
 Vite prints the exact port if 5173 is taken.
 
@@ -88,7 +88,7 @@ So: if you change the server port with `PORT`, you must either keep **8788** for
 ## Production and networking notes
 
 - **HTTPS sites** use **`wss://`** to the same host on port **8788**. You need a TLS endpoint for that port (or a reverse proxy that upgrades WebSocket and forwards to `mp-server`).
-- **Remote two players** must both reach **the same** WebSocket host/port (same LAN, or a server with **8788** open / proxied). Playing “host on laptop, guest on phone” on the same Wi‑Fi usually means using the computer’s LAN IP in the phone’s browser (e.g. `http://192.168.x.x:5173/dice-21/`) and ensuring nothing blocks **8788** on the machine running `mp-server`.
+- **Remote two players** must both reach **the same** WebSocket host/port (same LAN, or a server with **8788** open / proxied). Playing “host on laptop, guest on phone” on the same Wi‑Fi usually means using the computer’s LAN IP in the phone’s browser (e.g. `http://192.168.x.x:5173/` or `/dice-21/`) and ensuring nothing blocks **8788** on the machine running `mp-server`.
 - **`mp-server` is in-memory**: restarting it clears rooms and sessions. There is no persistence layer.
 
 ## Build (static output)

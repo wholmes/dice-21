@@ -1,10 +1,67 @@
 /**
  * Mobile layout: corner docks move into a bottom sheet; quick bar keeps play + tools reachable.
+ * Also persists collapsible UI (Lifetime / Badges details, rules panel) in localStorage.
  */
 const MQ = '(max-width: 640px)'
 
+const LS = {
+  lifeDetails: 'd21_ui_lifeDetails_open',
+  achDetails: 'd21_ui_achDetails_open',
+  panelHelp: 'd21_ui_panelHelp_open',
+}
+
 function $(id) {
   return document.getElementById(id)
+}
+
+function readStoredTriState(key) {
+  try {
+    const v = localStorage.getItem(key)
+    if (v === '1') return true
+    if (v === '0') return false
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function writeStoredBool(key, open) {
+  try {
+    localStorage.setItem(key, open ? '1' : '0')
+  } catch {
+    /* ignore */
+  }
+}
+
+function applyDetailsPersistence() {
+  const pairs = [
+    ['lifeDetails', LS.lifeDetails],
+    ['achDetails', LS.achDetails],
+  ]
+  for (const [id, key] of pairs) {
+    const el = document.getElementById(id)
+    if (!el) continue
+    const saved = readStoredTriState(key)
+    if (saved !== null) el.open = saved
+    el.addEventListener('toggle', () => writeStoredBool(key, el.open))
+  }
+}
+
+function setPanelHelpOpen(open) {
+  const help = $('panelHelpBody')
+  const toggle = $('panelHelpToggle')
+  if (!help || !toggle) return
+  help.hidden = !open
+  toggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+  toggle.textContent = open ? '−' : '+'
+}
+
+function wirePanelHelpPersistence() {
+  const help = $('panelHelpBody')
+  const toggle = $('panelHelpToggle')
+  if (!help || !toggle) return
+  const persist = () => writeStoredBool(LS.panelHelp, !help.hidden)
+  toggle.addEventListener('click', () => requestAnimationFrame(persist))
 }
 
 function isMobileLayout() {
@@ -79,18 +136,32 @@ function openSheet(mode) {
   $('mobileSheetClose')?.focus()
 }
 
+function syncPanelHelpToLayout() {
+  if (isMobileLayout()) {
+    setPanelHelpOpen(false)
+  } else {
+    const saved = readStoredTriState(LS.panelHelp)
+    if (saved !== null) setPanelHelpOpen(saved)
+  }
+}
+
 function init() {
   closeSheet()
+  applyDetailsPersistence()
+
+  setMobileClass()
+  syncPanelHelpToLayout()
+  wirePanelHelpPersistence()
 
   const bar = $('mobileQuickBar')
   const backdrop = $('mobileSheetBackdrop')
   const closeBtn = $('mobileSheetClose')
   if (!bar) return
 
-  setMobileClass()
   window.matchMedia(MQ).addEventListener('change', () => {
     setMobileClass()
     if (!isMobileLayout()) closeSheet()
+    syncPanelHelpToLayout()
   })
 
   $('mqaBet')?.addEventListener('click', () => {
@@ -115,6 +186,7 @@ function init() {
       toggle.setAttribute('aria-expanded', 'true')
       toggle.textContent = '−'
     }
+    writeStoredBool(LS.panelHelp, true)
     $('ui')?.scrollIntoView({ behavior: 'smooth', block: 'end' })
     help?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   })
@@ -125,15 +197,6 @@ function init() {
     if (e.key === 'Escape' && !$('mobileSheet')?.hidden) closeSheet()
   })
 
-  if (isMobileLayout()) {
-    const help = $('panelHelpBody')
-    const toggle = $('panelHelpToggle')
-    if (help && toggle) {
-      help.hidden = true
-      toggle.setAttribute('aria-expanded', 'false')
-      toggle.textContent = '+'
-    }
-  }
 }
 
 init()
