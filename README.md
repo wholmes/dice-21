@@ -126,7 +126,7 @@ Looped **background** bed (low gain). Switches when the table theme / tier updat
 | **`silk-icosphere-main-version-15772-01-30.wav`** | **$25** max bet tier (premium stakes table). |
 | **`lush-21-on-the-block-main-version-43576-01-53.wav`** | **$100** max bet tier (high roller). |
 
-**Ambience DJ** (checkbox in the Table dock, or **`?djAmbience=1`**) plays **all four** tracks in rotation as each clip ends—**independent of** max stake tier. Stake-based ambience applies when DJ is off.
+**Ambience DJ** is **on by default** (checkbox in the Table dock, or **`?djAmbience=1`** / omit URL to follow `localStorage`). It plays **all four** tracks in rotation as each clip ends—**independent of** max stake tier. Turn it off for stake-based ambience only.
 
 **Reduced motion** (`prefers-reduced-motion` or **`?reducedMotion=1`**) disables ambience and most other SFX.
 
@@ -158,7 +158,7 @@ Query parameters are read from **`/dice-21/`** (and the same path on your dev ho
 | **`diceShakeSfxMs`** | e.g. `-40` to `500` (ms) | Main bundle | **Shake loop** schedule offset (parsed in the bundle; very large values like **`-40000`** are mapped so they behave like small negative seconds, not multi‑second delays). |
 | **`diceShakeSfxOffsetMs`** | `0`–`950` (ms) | Main bundle | **Skip** this many milliseconds from the **start** of the shake WAV (useful if the file has silence at the front). |
 | **`chipPushBigMin`** | `4`–`28` | Main bundle | Minimum **visible stack count** to use the **large** pot chip-push clip (`allinpushchips-96121`). Default **12**. |
-| **`djAmbience`** | `1`, `true`, `0`, or `false` | Main bundle | **`1`** / **`true`**: **Ambience DJ** — cycles through all four room ambience tracks in order (no looping per track; **ignores stake tier**). **`0`** / **`false`**: off. **Omitted** = use saved **`dice21_amb_dj`** in `localStorage` (same as the **Ambience DJ** checkbox in the Table dock). |
+| **`djAmbience`** | `1`, `true`, `0`, or `false` | Main bundle | **`1`** / **`true`**: **Ambience DJ** — cycles through all four room ambience tracks in order (no looping per track; **ignores stake tier**). **`0`** / **`false`**: off. **Omitted** = **`dice21_amb_dj`** in `localStorage` if set (`0` / `1`), else **on** by default (same as the **Ambience DJ** checkbox in the Table dock). |
 | **`guest`** | `1` or `true` | `dice21-mp.js` | Pretend **multiplayer guest** (spectator): disables deal/bet/hit/stand, chips, mode, reset—useful for layout or HUD testing without a WebSocket room. |
 | **`wsPort`** or **`mpPort`** | `1`–`65535` (e.g. `8788`) | `dice21-mp.js` | WebSocket port for **`mp-server`** (default **8788**). Use if your relay listens on a non-default port. |
 
