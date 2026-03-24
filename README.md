@@ -68,6 +68,19 @@ Open Poker Dice or Dice 21 in the browser as above. The page loads static assets
 - **Host** plays the full Dice 21 game (deal, hit, stand, chips, etc.).
 - **Guest** joins as a **spectator**: the HUD (totals, pot, chips, messages) **syncs live** from the host; guest controls are disabled so one person drives the match.
 
+### Dice 21: progressive stakes (single-player)
+
+Bet sizes unlock from **lifetime stats** stored in the browser (`localStorage`). You start at **$1** bets (pot up to **$2** with the house match). Larger chips appear only after you have played enough hands **and** won enough total dollars over your career (both thresholds apply).
+
+| Max bet | Next pot (2× bet) | Hands played | Lifetime $ won |
+|--------:|------------------:|-------------:|---------------:|
+| $1 | $2 | — | — |
+| $5 | $10 | ≥ 15 | ≥ $250 |
+| $25 | $50 | ≥ 60 | ≥ $2,000 |
+| $100 | $200 | ≥ 200 | ≥ $8,000 |
+
+The bet dock shows progress toward the next tier. Clearing lifetime stats resets stake unlocks and returns the default bet to **$1**.
+
 ### Poker Dice
 
 Uses the **same** `mp-server` process and protocol (room codes, host/guest, shared deterministic rolls via a match seed). Run `mp-server` alongside `npm run dev` the same way.

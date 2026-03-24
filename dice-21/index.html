@@ -25,6 +25,144 @@
         inset: 0;
         z-index: 0;
       }
+      /* Upper-left: earned badge artwork (syncs with Badges list) */
+      .d21-badge-showcase {
+        position: fixed;
+        z-index: 2;
+        top: max(12px, env(safe-area-inset-top));
+        left: max(12px, env(safe-area-inset-left));
+        width: min(88vw, 280px);
+        max-width: 280px;
+        pointer-events: none;
+        user-select: none;
+      }
+      .d21-badge-showcase::before {
+        content: "";
+        position: absolute;
+        left: -28px;
+        top: -20px;
+        width: min(95vw, 320px);
+        height: 200px;
+        background: radial-gradient(
+          ellipse 80% 70% at 20% 25%,
+          rgba(8, 10, 16, 0.5) 0%,
+          rgba(8, 10, 16, 0.18) 45%,
+          transparent 72%
+        );
+        pointer-events: none;
+        z-index: -1;
+      }
+      .d21-badge-showcase-inner {
+        padding: 10px 12px 12px;
+        border-radius: 14px;
+        background: linear-gradient(165deg, rgba(34, 38, 52, 0.94), rgba(16, 18, 28, 0.97));
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow:
+          0 12px 36px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 0 24px rgba(232, 200, 122, 0.06);
+      }
+      .d21-badge-showcase-title {
+        margin: 0 0 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #7a8a9e;
+      }
+      .d21-badge-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .d21-badge-slot {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        background: rgba(6, 8, 14, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition:
+          border-color 0.35s ease,
+          box-shadow 0.35s ease,
+          filter 0.35s ease,
+          opacity 0.35s ease;
+      }
+      .d21-badge-slot .d21-badge-icon {
+        width: 100%;
+        height: 100%;
+        max-width: 52px;
+        max-height: 52px;
+        display: block;
+      }
+      .d21-badge-slot__frame {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+      .d21-badge-slot__lock {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        font-size: 10px;
+        line-height: 1;
+        opacity: 0.55;
+        filter: grayscale(1);
+      }
+      .d21-badge-slot--off {
+        filter: grayscale(1) brightness(0.72);
+        opacity: 0.55;
+      }
+      .d21-badge-slot--off .d21-badge-slot__lock {
+        display: block;
+      }
+      .d21-badge-slot--on {
+        filter: none;
+        opacity: 1;
+        border-color: rgba(232, 200, 122, 0.45);
+        box-shadow:
+          0 0 0 1px rgba(232, 200, 122, 0.15) inset,
+          0 0 20px rgba(232, 200, 122, 0.18);
+      }
+      .d21-badge-slot--on .d21-badge-slot__lock {
+        display: none;
+      }
+      @keyframes d21BadgePop {
+        0% {
+          transform: scale(0.92);
+        }
+        40% {
+          transform: scale(1.06);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      .d21-badge-slot--pop {
+        animation: d21BadgePop 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+        box-shadow:
+          0 0 0 1px rgba(232, 200, 122, 0.35) inset,
+          0 0 28px rgba(232, 200, 122, 0.45);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .d21-badge-slot--pop {
+          animation: none;
+        }
+      }
+      @media (max-width: 640px) {
+        .d21-badge-showcase {
+          width: min(92vw, 260px);
+          max-width: 260px;
+        }
+        .d21-badge-grid {
+          gap: 6px;
+        }
+      }
       /* Stacking: canvas < win overlay < chip dock & felt dock < bottom panel (Deal / Hit / Stand) */
       #ui {
         position: fixed;
@@ -604,6 +742,13 @@
         margin: 0;
         width: 100%;
       }
+      #d21StakeHint {
+        font-size: 9px;
+        line-height: 1.35;
+        color: rgba(180, 195, 215, 0.88);
+        margin: 4px 0 0;
+        width: 100%;
+      }
       h1 {
         margin: 0 0 4px;
         font-size: 17px;
@@ -948,13 +1093,13 @@
         padding: 9px 14px;
         font-size: 13px;
       }
-      /* Arcade-style “power up” toast — center view, above felt, below bottom UI */
+      /* Arcade-style “power up” toast — above round overlay + double dialog (see #doubleOffer z-index) */
       #powerUp {
         position: fixed;
         left: 50%;
         top: min(22%, max(64px, env(safe-area-inset-top)));
         transform: translateX(-50%) scale(0.94);
-        z-index: 4;
+        z-index: 10050;
         width: min(92vw, 22rem);
         pointer-events: none;
         text-align: center;
@@ -1056,6 +1201,7 @@
         color: #c9a86a;
       }
     </style>
+    <script src="/assets/dice21-badge-showcase.js"></script>
     <script type="module" crossorigin src="/assets/dice21-DU7nhPGz.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
   </head>
@@ -1079,6 +1225,12 @@
       </div>
     </div>
     <div id="app">
+      <div class="d21-badge-showcase" id="d21BadgeShowcase" aria-label="Earned badges">
+        <div class="d21-badge-showcase-inner">
+          <p class="d21-badge-showcase-title">Badges</p>
+          <div class="d21-badge-grid" id="d21BadgeGrid"></div>
+        </div>
+      </div>
     <div id="d21mpWrap">
       <button
         type="button"
@@ -1157,12 +1309,13 @@
         role="group"
         aria-label="Bet size in dollars"
       >
-        <button type="button" class="chip-btn chip-d1" data-denom="1" aria-pressed="false">$1</button>
-        <button type="button" class="chip-btn chip-d5" data-denom="5" aria-pressed="true">$5</button>
+        <button type="button" class="chip-btn chip-d1" data-denom="1" aria-pressed="true">$1</button>
+        <button type="button" class="chip-btn chip-d5" data-denom="5" aria-pressed="false">$5</button>
         <button type="button" class="chip-btn chip-d25" data-denom="25" aria-pressed="false">$25</button>
         <button type="button" class="chip-btn chip-d100" data-denom="100" aria-pressed="false">$100</button>
       </div>
-      <p id="betHud" class="label-muted">Bet $5 · next pot $10</p>
+      <p id="betHud" class="label-muted">Bet $1 · next pot $2</p>
+      <p id="d21StakeHint" class="label-muted" aria-live="polite"></p>
     </div>
     <div id="feltDock">
       <p class="bet-dock-label">Felt</p>
