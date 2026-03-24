@@ -121,9 +121,10 @@ Looped **background** bed (low gain). Switches when the table theme / tier updat
 
 | File | When it plays |
 |------|----------------|
-| **`freesound_community-bruit-2-casino-56939.wav`** | **Below $25** max bet tier (“small room”). |
+| **`freesound_community-bruit-2-casino-56939.wav`** | **$1** max bet tier (“small room”). |
+| **`rhythm-biscuit-konstantin-garbuzyuk-main-version-46631-01-42.wav`** | **$5** max bet tier. |
 | **`silk-icosphere-main-version-15772-01-30.wav`** | **$25** max bet tier (premium stakes table). |
-| **`lush-21-on-the-block-main-version-43576-01-53.wav`** | **$100 and above** max bet tier (high roller). |
+| **`lush-21-on-the-block-main-version-43576-01-53.wav`** | **$100** max bet tier (high roller). |
 
 **Reduced motion** (`prefers-reduced-motion` or **`?reducedMotion=1`**) disables ambience and most other SFX.
 
