@@ -25,7 +25,7 @@
         inset: 0;
         z-index: 0;
       }
-      /* Upper-left: earned badge artwork (syncs with Badges list) */
+      /* Upper-left: earned badge artwork only when unlocked; locked slots show a neutral placeholder */
       .d21-badge-showcase {
         position: fixed;
         z-index: 2;
@@ -115,8 +115,7 @@
         filter: grayscale(1);
       }
       .d21-badge-slot--off {
-        filter: grayscale(1) brightness(0.72);
-        opacity: 0.55;
+        opacity: 0.82;
       }
       .d21-badge-slot--off .d21-badge-slot__lock {
         display: block;
@@ -541,7 +540,16 @@
       .felt-swatch.felt-4 {
         background: #2a1450;
       }
-      #btnClearStats {
+      .felt-swatch.felt-5 {
+        background: linear-gradient(145deg, #143528 0%, #1e4a3d 55%, #0a1814 100%);
+      }
+      .felt-swatch.felt-6 {
+        background: linear-gradient(145deg, #4a1428 0%, #6b2038 50%, #1a0a10 100%);
+      }
+      .felt-swatch.felt-7 {
+        background: linear-gradient(145deg, #1a1a1c 0%, #2a2418 45%, #0a0a0c 100%);
+      }
+      #btnResetProgress {
         margin-top: 6px;
         font-size: 11px;
         padding: 6px 10px;
@@ -615,7 +623,7 @@
           border-color 0.25s ease,
           box-shadow 0.25s ease;
       }
-      /* Between rounds: remind player to confirm bet before Deal */
+      /* Between rounds: remind player to place bet */
       #chipDock.needs-bet {
         border-color: rgba(232, 200, 122, 0.55);
       }
@@ -660,7 +668,7 @@
         }
       }
       @media (max-width: 640px) {
-        /* Sit above the bottom control panel so Deal / Hit aren’t covered */
+        /* Sit above the bottom control panel so Bet / Hit aren’t covered */
         #chipDock {
           bottom: max(148px, calc(env(safe-area-inset-bottom) + 132px));
         }
@@ -678,6 +686,15 @@
         grid-template-columns: repeat(2, 1fr);
         gap: 6px;
         width: 100%;
+      }
+      #btnBetDock {
+        width: 100%;
+        margin-top: 2px;
+        padding: 10px 12px;
+        min-height: 44px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
       }
       .chip-btn {
         box-sizing: border-box;
@@ -1038,6 +1055,123 @@
       #roundOverlaySub:empty {
         display: none;
       }
+      /* Dice shake — above table UI (z-index 3), below double dialog (5); touch/Space hold to shake */
+      #d21ShakeOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 4;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+          max(120px, calc(env(safe-area-inset-bottom) + 96px)) max(20px, env(safe-area-inset-left));
+        pointer-events: none;
+        background: radial-gradient(ellipse 95% 55% at 50% 78%, rgba(6, 8, 14, 0.55) 0%, rgba(6, 8, 14, 0.22) 50%, transparent 78%);
+        transition: opacity 0.2s ease;
+      }
+      #d21ShakeOverlay[hidden] {
+        display: none !important;
+      }
+      #d21ShakeOverlay:not([hidden]) {
+        pointer-events: auto;
+      }
+      .d21-shake-overlay-inner {
+        position: relative;
+        width: min(92vw, 26rem);
+        padding: 14px 18px 16px;
+        border-radius: 14px;
+        text-align: center;
+        background: linear-gradient(165deg, rgba(28, 32, 48, 0.94), rgba(14, 16, 24, 0.97));
+        border: 1px solid rgba(232, 200, 122, 0.38);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 12px 40px rgba(0, 0, 0, 0.5),
+          0 0 32px rgba(232, 200, 122, 0.12);
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .d21-shake-overlay-title {
+        margin: 0 0 6px;
+        font-size: clamp(0.72rem, 2.6vw, 0.82rem);
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #f0d78c;
+        text-shadow: 0 0 18px rgba(232, 200, 122, 0.3);
+      }
+      .d21-shake-overlay-sub {
+        margin: 0;
+        font-size: clamp(0.8rem, 2.8vw, 0.92rem);
+        line-height: 1.45;
+        color: rgba(200, 210, 228, 0.92);
+        font-weight: 500;
+      }
+      .d21-shake-overlay-kbd {
+        display: inline-block;
+        margin: 0 3px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.78em;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: #e8ecf4;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .d21-shake-overlay-dismiss {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        z-index: 2;
+        width: 32px;
+        height: 32px;
+        margin: 0;
+        padding: 0;
+        border: none;
+        border-radius: 8px;
+        font-size: 22px;
+        line-height: 1;
+        color: rgba(200, 210, 228, 0.85);
+        background: rgba(255, 255, 255, 0.06);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .d21-shake-overlay-dismiss:hover {
+        color: #e4e8f0;
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .d21-shake-overlay-dismiss:focus-visible {
+        outline: 2px solid rgba(232, 200, 122, 0.55);
+        outline-offset: 2px;
+      }
+      .d21-shake-hint-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+        max-width: 148px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #8a9aaf;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .d21-shake-hint-toggle input {
+        width: 14px;
+        height: 14px;
+        margin: 0;
+        flex-shrink: 0;
+        accent-color: #c9a86a;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #d21ShakeOverlay {
+          transition: none;
+        }
+      }
       /* Double-or-nothing — above round overlay, below bottom UI */
       #doubleOffer {
         position: fixed;
@@ -1160,6 +1294,200 @@
         color: rgba(200, 210, 228, 0.92);
         font-weight: 500;
       }
+      /* Stake tier unlock — full-screen moment above power-up toast */
+      #d21StakesUp {
+        position: fixed;
+        inset: 0;
+        z-index: 10060;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+          max(100px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+          visibility 0.4s;
+      }
+      #d21StakesUp.is-visible {
+        pointer-events: auto;
+        opacity: 1;
+        visibility: visible;
+      }
+      #d21StakesUpBackdrop {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: radial-gradient(ellipse 90% 80% at 50% 38%, rgba(8, 10, 18, 0.88) 0%, rgba(4, 6, 12, 0.55) 52%, rgba(4, 6, 12, 0.35) 100%);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        cursor: pointer;
+      }
+      .d21-stakes-up-modal {
+        position: relative;
+        z-index: 1;
+        width: min(92vw, 24rem);
+        padding: 28px 22px 22px;
+        border-radius: 20px;
+        text-align: center;
+        background: linear-gradient(155deg, rgba(32, 36, 54, 0.98) 0%, rgba(14, 16, 26, 0.99) 48%, rgba(18, 20, 32, 0.98) 100%);
+        border: 1px solid rgba(232, 200, 122, 0.55);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.4) inset,
+          0 24px 64px rgba(0, 0, 0, 0.65),
+          0 0 80px rgba(232, 200, 122, 0.22),
+          0 0 120px rgba(90, 140, 220, 0.08);
+        transform: scale(0.94) translateY(16px);
+        opacity: 0;
+        transition:
+          transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.45s ease;
+      }
+      #d21StakesUp.is-visible .d21-stakes-up-modal {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+      .d21-stakes-up-chips {
+        position: relative;
+        height: 72px;
+        margin: 0 auto 16px;
+        width: 120px;
+      }
+      .d21-stakes-up-chip {
+        position: absolute;
+        left: 50%;
+        width: 88px;
+        height: 88px;
+        margin-left: -44px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.22);
+        box-shadow:
+          0 8px 24px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 0 40px rgba(232, 200, 122, 0.15);
+      }
+      .d21-stakes-up-chip--1 {
+        bottom: 0;
+        z-index: 3;
+        background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.35) 0%, transparent 42%),
+          linear-gradient(145deg, #c9a86a 0%, #8b6914 45%, #5a4208 100%);
+        transform: rotate(-8deg);
+        animation: d21ChipFloat1 2.8s ease-in-out infinite;
+      }
+      .d21-stakes-up-chip--2 {
+        bottom: 14px;
+        z-index: 2;
+        width: 84px;
+        height: 84px;
+        margin-left: -42px;
+        background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.28) 0%, transparent 42%),
+          linear-gradient(145deg, #a8b4c8 0%, #4a5568 50%, #2a3040 100%);
+        transform: rotate(6deg);
+        animation: d21ChipFloat2 2.8s ease-in-out infinite 0.15s;
+      }
+      .d21-stakes-up-chip--3 {
+        bottom: 28px;
+        z-index: 1;
+        width: 80px;
+        height: 80px;
+        margin-left: -40px;
+        background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.22) 0%, transparent 42%),
+          linear-gradient(145deg, #d4a84b 0%, #a07018 50%, #6b4808 100%);
+        transform: rotate(-4deg);
+        animation: d21ChipFloat3 2.8s ease-in-out infinite 0.3s;
+      }
+      @keyframes d21ChipFloat1 {
+        0%,
+        100% {
+          transform: rotate(-8deg) translateY(0);
+        }
+        50% {
+          transform: rotate(-8deg) translateY(-4px);
+        }
+      }
+      @keyframes d21ChipFloat2 {
+        0%,
+        100% {
+          transform: rotate(6deg) translateY(0);
+        }
+        50% {
+          transform: rotate(6deg) translateY(-3px);
+        }
+      }
+      @keyframes d21ChipFloat3 {
+        0%,
+        100% {
+          transform: rotate(-4deg) translateY(0);
+        }
+        50% {
+          transform: rotate(-4deg) translateY(-2px);
+        }
+      }
+      .d21-stakes-up-kicker {
+        margin: 0 0 6px;
+        font-size: clamp(0.68rem, 2.4vw, 0.78rem);
+        font-weight: 800;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: #c9a86a;
+        text-shadow: 0 0 24px rgba(232, 200, 122, 0.35);
+      }
+      .d21-stakes-up-amount {
+        margin: 0 0 12px;
+        font-size: clamp(2.75rem, 12vw, 3.75rem);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        background: linear-gradient(180deg, #fff8e8 0%, #f0d78c 38%, #c9a86a 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 4px 24px rgba(232, 200, 122, 0.45));
+      }
+      .d21-stakes-up-detail {
+        margin: 0 0 20px;
+        font-size: clamp(0.82rem, 2.8vw, 0.95rem);
+        line-height: 1.5;
+        color: rgba(200, 210, 228, 0.92);
+        font-weight: 500;
+      }
+      .d21-stakes-up-btn {
+        min-height: 44px;
+        padding: 10px 28px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border-radius: 12px;
+        border: 1px solid rgba(232, 200, 122, 0.5);
+        color: #1a1c24;
+        cursor: pointer;
+        background: linear-gradient(180deg, #f0d78c 0%, #c9a86a 100%);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4), 0 0 32px rgba(232, 200, 122, 0.2);
+        -webkit-tap-highlight-color: transparent;
+      }
+      .d21-stakes-up-btn:hover {
+        filter: brightness(1.06);
+      }
+      .d21-stakes-up-btn:focus-visible {
+        outline: 2px solid rgba(232, 200, 122, 0.75);
+        outline-offset: 3px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #d21StakesUp {
+          transition: opacity 0.2s ease, visibility 0.2s;
+        }
+        .d21-stakes-up-modal {
+          transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .d21-stakes-up-chip--1,
+        .d21-stakes-up-chip--2,
+        .d21-stakes-up-chip--3 {
+          animation: none;
+        }
+      }
       /* `hidden` must win: a bare `display: flex` overrides the attribute without this rule */
       #fileGate[hidden] {
         display: none !important;
@@ -1280,6 +1608,33 @@
       </div>
     </div>
     <div
+      id="d21ShakeOverlay"
+      class="d21-shake-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-live="polite"
+      aria-labelledby="d21ShakeOverlayTitle"
+      hidden
+      aria-hidden="true"
+    >
+      <div class="d21-shake-overlay-inner">
+        <button
+          type="button"
+          class="d21-shake-overlay-dismiss"
+          id="d21ShakeOverlayDismiss"
+          aria-label="Close shake hint (turn back on under Table)"
+        >
+          ×
+        </button>
+        <p id="d21ShakeOverlayTitle" class="d21-shake-overlay-title">Shake the dice</p>
+        <p class="d21-shake-overlay-sub">
+          Hold <span class="d21-shake-overlay-kbd">Space</span> or
+          <span class="d21-shake-overlay-kbd">Enter</span>, or press &amp; hold this card. Longer hold = longer
+          shake; release to roll. Don’t press anything for a 1.5-second shake, then roll.
+        </p>
+      </div>
+    </div>
+    <div
       id="doubleOffer"
       class="double-offer"
       role="dialog"
@@ -1302,6 +1657,25 @@
         <p id="powerUpSub"></p>
       </div>
     </div>
+    <div id="d21StakesUp" class="d21-stakes-up" aria-hidden="true">
+      <div id="d21StakesUpBackdrop" aria-hidden="true"></div>
+      <div
+        class="d21-stakes-up-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="d21StakesUpHeading"
+      >
+        <div class="d21-stakes-up-chips" aria-hidden="true">
+          <span class="d21-stakes-up-chip d21-stakes-up-chip--3"></span>
+          <span class="d21-stakes-up-chip d21-stakes-up-chip--2"></span>
+          <span class="d21-stakes-up-chip d21-stakes-up-chip--1"></span>
+        </div>
+        <p id="d21StakesUpHeading" class="d21-stakes-up-kicker">New table unlocked</p>
+        <p class="d21-stakes-up-amount" id="d21StakesUpAmt">$5</p>
+        <p class="d21-stakes-up-detail" id="d21StakesUpDetail"></p>
+        <button type="button" class="d21-stakes-up-btn" id="d21StakesUpDismiss">Continue</button>
+      </div>
+    </div>
     <div id="chipDock" class="bet-dock">
       <p class="bet-dock-label">Bet</p>
       <div
@@ -1314,25 +1688,43 @@
         <button type="button" class="chip-btn chip-d25" data-denom="25" aria-pressed="false">$25</button>
         <button type="button" class="chip-btn chip-d100" data-denom="100" aria-pressed="false">$100</button>
       </div>
+      <button
+        type="button"
+        class="primary"
+        id="btnBetDock"
+        aria-label="Place bet — match the house and roll"
+      >
+        Bet
+      </button>
       <p id="betHud" class="label-muted">Bet $1 · next pot $2</p>
       <p id="d21StakeHint" class="label-muted" aria-live="polite"></p>
     </div>
     <div id="feltDock">
-      <p class="bet-dock-label">Felt</p>
-      <div class="felt-picker" role="group" aria-label="Table felt">
-        <button type="button" class="felt-swatch felt-0 is-selected" data-felt="0" title="Emerald" aria-label="Emerald felt"></button>
-        <button type="button" class="felt-swatch felt-1" data-felt="1" title="Midnight" aria-label="Midnight felt"></button>
-        <button type="button" class="felt-swatch felt-2" data-felt="2" title="Burgundy" aria-label="Burgundy felt"></button>
-        <button type="button" class="felt-swatch felt-3" data-felt="3" title="Plum" aria-label="Plum felt"></button>
-        <button type="button" class="felt-swatch felt-4" data-felt="4" title="Royal" aria-label="Royal felt"></button>
+      <!-- Felt swatches hidden: table felt follows stake tier (see d21ApplyTableTheme). -->
+      <div class="felt-picker-section" hidden>
+        <p class="bet-dock-label">Felt</p>
+        <div class="felt-picker" role="group" aria-label="Table felt">
+          <button type="button" class="felt-swatch felt-0 is-selected" data-felt="0" title="Emerald" aria-label="Emerald felt"></button>
+          <button type="button" class="felt-swatch felt-1" data-felt="1" title="Midnight" aria-label="Midnight felt"></button>
+          <button type="button" class="felt-swatch felt-2" data-felt="2" title="Burgundy" aria-label="Burgundy felt"></button>
+          <button type="button" class="felt-swatch felt-3" data-felt="3" title="Plum" aria-label="Plum felt"></button>
+          <button type="button" class="felt-swatch felt-4" data-felt="4" title="Royal" aria-label="Royal felt"></button>
+          <button type="button" class="felt-swatch felt-5" data-felt="5" title="$5 Club" aria-label="$5 Club felt"></button>
+          <button type="button" class="felt-swatch felt-6" data-felt="6" title="$25 Premium" aria-label="$25 Premium felt"></button>
+          <button type="button" class="felt-swatch felt-7" data-felt="7" title="$100 Elite" aria-label="$100 Elite felt"></button>
+        </div>
       </div>
-      <label class="bet-dock-label" for="gameMode" style="margin-top: 4px">Mode</label>
+      <label class="bet-dock-label" for="gameMode">Mode</label>
       <select id="gameMode" class="mode-select" aria-label="Game mode">
         <option value="classic">Classic — dealer &lt;17</option>
         <option value="sharp">Sharp — dealer to 18</option>
         <option value="chill">Chill — stand on 16</option>
         <option value="fortune">Fortune — 21 pays extra</option>
       </select>
+      <label class="d21-shake-hint-toggle" for="d21ShakeHintPref" title="Show Space / Enter shake instructions when rolling">
+        <input type="checkbox" id="d21ShakeHintPref" />
+        Shake hint
+      </label>
     </div>
     <div
       id="mobileSheetBackdrop"
@@ -1391,14 +1783,14 @@
           <span>House <strong id="aiTotal">—</strong></span>
         </div>
         <p class="label-muted" style="margin: 8px 0 0">
-          Bankroll ($) — you <strong id="chipsYou">500</strong> · house <strong id="chipsAi">500</strong>
+          Bankroll ($) — you <strong id="chipsYou">100</strong> · house <strong id="chipsAi">100</strong>
         </p>
         <details class="lifetime-details" id="lifeDetails">
           <summary><span class="label-muted">Lifetime</span> <span id="lifeSummary">net +0 · 0 hands</span></summary>
           <div class="lifetime-body">
             Net <strong id="lifeNet">0</strong> · won <strong id="lifeWon">0</strong> · lost <strong id="lifeLost">0</strong> · hands
             <strong id="lifeHands">0</strong>
-            <button type="button" class="ghost" id="btnClearStats">Clear lifetime stats</button>
+            <button type="button" class="ghost" id="btnResetProgress">Reset all progress</button>
           </div>
         </details>
         <details class="lifetime-details ach-details" id="achDetails">
@@ -1406,7 +1798,7 @@
           <div class="lifetime-body ach-body" id="achList"></div>
         </details>
         <div class="btn-row" style="margin-top: 12px">
-          <button type="button" class="primary" id="btnDeal">Deal</button>
+          <button type="button" class="primary" id="btnDeal" aria-label="Place bet — match the house and roll">Bet</button>
           <button type="button" class="secondary" id="btnHit" disabled>Hit</button>
           <button type="button" class="secondary" id="btnStand" disabled>Stand</button>
         </div>

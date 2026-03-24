@@ -14,6 +14,19 @@
     high_roller: 'High roller',
   }
 
+  /** Tooltip when locked — do not reveal badge name/art until earned */
+  const LOCKED_TITLE = 'Locked — unlock through play (see Badges in panel)'
+
+  function placeholderSvg() {
+    return (
+      '<svg class="d21-badge-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<circle cx="32" cy="32" r="22" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>' +
+      '<circle cx="32" cy="32" r="10" fill="rgba(255,255,255,0.05)"/>' +
+      '<text x="32" y="40" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-family="system-ui,sans-serif" font-size="20" font-weight="700">?</text>' +
+      '</svg>'
+    )
+  }
+
   /** @type {Set<string>} */
   let prevUnlocked = new Set()
   let inited = false
@@ -78,9 +91,8 @@
 
     if (!grid.dataset.built) {
       grid.innerHTML = ORDER.map((id) => {
-        const label = LABELS[id] || id
-        return `<div class="d21-badge-slot" data-badge="${id}" title="${label}">
-          <span class="d21-badge-slot__frame">${iconSvg(id)}</span>
+        return `<div class="d21-badge-slot" data-badge="${id}" title="${LOCKED_TITLE}">
+          <span class="d21-badge-slot__frame">${placeholderSvg()}</span>
           <span class="d21-badge-slot__lock" aria-hidden="true">🔒</span>
         </div>`
       }).join('')
@@ -91,6 +103,11 @@
       const el = grid.querySelector(`[data-badge="${id}"]`)
       if (!el) return
       const on = unlocked.has(id)
+      const frame = el.querySelector('.d21-badge-slot__frame')
+      if (frame) {
+        frame.innerHTML = on ? iconSvg(id) : placeholderSvg()
+      }
+      el.setAttribute('title', on ? LABELS[id] || id : LOCKED_TITLE)
       el.classList.toggle('d21-badge-slot--on', on)
       el.classList.toggle('d21-badge-slot--off', !on)
       if (inited && on && !prevUnlocked.has(id)) {

@@ -87,12 +87,13 @@ function setRole(role) {
 function applyGuestChrome(isGuest) {
   const sel = [
     '#btnDeal',
+    '#btnBetDock',
     '#btnHit',
     '#btnStand',
     '#gameMode',
     '.chip-btn',
     '.felt-swatch',
-    '#btnClearStats',
+    '#btnResetProgress',
   ].join(',')
   document.querySelectorAll(sel).forEach((el) => {
     if (el) el.disabled = !!isGuest

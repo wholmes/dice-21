@@ -1,124 +1,174 @@
 # Dice 21 & Poker Dice
 
-Browser games built with [Vite](https://vitejs.dev/) as a small multi-page app: **Dice 21** is the default at `/` (also `/dice-21/`), and **Poker Dice** lives at `/poker-dice/`. Both can use an optional **Node WebSocket server** for two-player sessions.
+Two browser games in one [Vite](https://vitejs.dev/) multi-page app: **Dice 21** is the home page (`/` and `/dice-21/`), and **Poker Dice** lives at `/poker-dice/`. Both can use an optional **Node WebSocket server** for online two-player sessions.
 
-## Requirements
+---
 
-- **Node.js** 18+ (for `npm` and native `fetch` / ES modules)
+## Dice 21 — how to play
 
-## Install
+**Goal:** Get closer to **21** than the house without going **over** (busting). You play against the dealer, not other seats.
 
-```bash
-npm install
-```
+### One round
 
-## Run locally (single-player / UI only)
+1. **Pick a chip** ($1, $5, $25, or $100 depending on what you’ve unlocked) and press **Bet** (or the main bet control). You and the house each put that amount in; the **pot** is both antes combined (so a $5 bet ⇒ $10 in the pot before cards/dice).
+2. You get a **two-dice roll** to start. Your total shows in the panel.
+3. **Hit** to roll more dice, or **Stand** to lock your total and send play to the house.
+4. **Hitting:** If your total is **under 14**, your next hit uses **two dice** at once. At **14 or more**, each hit is **one die** only—so high totals get riskier.
+5. The **house** then rolls automatically until it stands or busts, following the **dealer mode** you chose (see below).
+6. **Compare:** Higher total without busting wins the pot. Tie = **push** (see below).
 
-Start the Vite dev server:
+### Winning, losing, and pushes
 
-```bash
-npm run dev
-```
+- **You win:** You take the pot (and sometimes extras—see Fortune mode).
+- **You lose:** The house takes the pot.
+- **Push (tie):** On a tie, you get a **small refund** from the house (based on your bet size), not the full pot—so ties aren’t a complete wash.
 
-Then open:
+### After you win — double or nothing
 
-| Game        | URL (typical) |
-|------------|----------------|
-| Dice 21    | `http://localhost:5173/` (same game at `/dice-21/`) |
-| Poker Dice | `http://localhost:5173/poker-dice/` |
+When you win a pot, you may get **Double or nothing?**: risk that win on a single **your die vs house die** roll (higher wins; ties re-roll). You can **Take win** to skip the gamble.
 
-Vite prints the exact port if 5173 is taken.
+### Rolling the dice
 
-## Multiplayer setup
+Rolls use a **3D table** view. While dice are “shaking,” you can **hold Space / Enter** (or press and hold the on-screen card) for a longer shake, or release early—optional flair; the game resolves when the shake finishes.
 
-Multiplayer is **not** served by Vite. It uses a separate process: `mp-server.mjs`, a small relay that speaks WebSocket on **port 8788** by default.
+### Badges & lifetime stats
 
-### 1. Start the WebSocket server
+The panel tracks **lifetime** net, won, lost, and hands played. **Badges** unlock from milestones (first win, streaks, pushes, high pots, etc.). Stats are stored in the browser (`localStorage`) unless you reset.
 
-In one terminal:
+---
 
-```bash
-npm run mp-server
-```
+## Dice 21 — dealer modes (rules)
 
-You should see:
+These only change **how the house plays** after you stand—not your hit rules.
 
-```text
-mp-server listening on ws://localhost:8788
-```
+| Mode | Dealer behavior |
+|------|-----------------|
+| **Classic** | House hits on totals **below 17**, stands on **17+** (standard feel). |
+| **Sharp** | House hits up to **18** (slightly tougher dealer). |
+| **Chill** | House **stands on 16** (a bit softer). |
+| **Fortune** | Same dealer idea as Classic for hits/stands, but when **you win with exactly 21**, you get an **extra half-bet** payout on top of the pot. |
 
-### 2. Start the web app
+Changing mode asks for **confirmation** first (dealer rules and Fortune payouts change; your chip stacks are not wiped). You can’t change mode mid-roll, mid-hand, or while **double-or-nothing** is open.
 
-In another terminal:
+---
 
-```bash
-npm run dev
-```
+## Dice 21 — progressive stakes & bankroll
 
-Open Poker Dice or Dice 21 in the browser as above. The page loads static assets from Vite; the game connects to the multiplayer server at **`ws://<same-host>:8788`** (or `wss:` when the page is served over HTTPS).
+- **Starting position:** Everyone begins at **$1** max bet (pot up to **$2** with the match). Your **table bankroll** scales with tier: **100× your max bet** (e.g. $100 bank each side at $1 stakes, up to **$10,000** each at $100 stakes).
+- **Unlocking bigger chips** needs both **enough lifetime hands played** and **enough lifetime dollars won** (career total, not one session):
 
-### 3. Play together
-
-- **Host** creates a room and gets a **4-character room code** (letters/digits, ambiguous characters like `0`/`O` are avoided).
-- **Guest** joins with that code. The server pairs one host and one guest per room; a third player gets “room is full.”
-- If the WebSocket server is not running, Dice 21 shows a warning such as “WebSocket error — is mp-server running?”
-
-### Dice 21 multiplayer behavior
-
-- **Host** plays the full Dice 21 game (deal, hit, stand, chips, etc.).
-- **Guest** joins as a **spectator**: the HUD (totals, pot, chips, messages) **syncs live** from the host; guest controls are disabled so one person drives the match.
-
-### Dice 21: progressive stakes (single-player)
-
-Bet sizes unlock from **lifetime stats** stored in the browser (`localStorage`). You start at **$1** bets (pot up to **$2** with the house match). Larger chips appear only after you have played enough hands **and** won enough total dollars over your career (both thresholds apply).
-
-| Max bet | Next pot (2× bet) | Hands played | Lifetime $ won |
-|--------:|------------------:|-------------:|---------------:|
+| Max bet | Typical pot (2× bet) | Hands (lifetime) | $ won (lifetime) |
+|--------:|----------------------:|-----------------:|-----------------:|
 | $1 | $2 | — | — |
 | $5 | $10 | ≥ 15 | ≥ $250 |
 | $25 | $50 | ≥ 60 | ≥ $2,000 |
 | $100 | $200 | ≥ 200 | ≥ $8,000 |
 
-The bet dock shows progress toward the next tier. Clearing lifetime stats resets stake unlocks and returns the default bet to **$1**.
-
-### Poker Dice
-
-Uses the **same** `mp-server` process and protocol (room codes, host/guest, shared deterministic rolls via a match seed). Run `mp-server` alongside `npm run dev` the same way.
+The UI shows progress toward the **next** tier. When you unlock a tier, you get a **stakes-up** celebration and the **table theme** updates (see below).
 
 ---
 
-## Configuration
+## Dice 21 — table look (stake tier)
 
-| Variable / detail | Meaning |
-|-------------------|--------|
-| **`PORT`**        | WebSocket listen port. Default **`8788`**. Example: `PORT=9000 npm run mp-server` |
-| **Client URL**    | The browser builds the WebSocket URL as `ws(s)://<page hostname>:8788` — the port is fixed in the bundled client to **8788** unless you change the source in `public/assets/dice21-mp.js` (and the Poker Dice bundle) and rebuild. |
+The **felt color**, scene lighting, and the **logo** painted on the felt match your **current max stake tier**—the table “levels up” with your career.
 
-So: if you change the server port with `PORT`, you must either keep **8788** for the client or update the client and rebuild.
+| Tier | Table vibe | Logo flavor |
+|------|------------|-------------|
+| **$1** | Classic emerald | “21” + DICE 21 |
+| **$5** | Club | “CLUB” line |
+| **$25** | Premium | “PREMIUM” |
+| **$100** | Elite / high-stakes | “HIGH STAKES”, “MAX $100 · DICE 21”, gold treatment |
+
+Tier applies on load, when you unlock a new tier, and after **Reset all progress** (back to $1 look). There is no separate felt color picker in the UI anymore—felt follows progression.
 
 ---
 
-## Production and networking notes
+## Dice 21 — reset progress
 
-- **HTTPS sites** use **`wss://`** to the same host on port **8788**. You need a TLS endpoint for that port (or a reverse proxy that upgrades WebSocket and forwards to `mp-server`).
-- **Remote two players** must both reach **the same** WebSocket host/port (same LAN, or a server with **8788** open / proxied). Playing “host on laptop, guest on phone” on the same Wi‑Fi usually means using the computer’s LAN IP in the phone’s browser (e.g. `http://192.168.x.x:5173/` or `/dice-21/`) and ensuring nothing blocks **8788** on the machine running `mp-server`.
-- **`mp-server` is in-memory**: restarting it clears rooms and sessions. There is no persistence layer.
+**Reset all progress** (Lifetime section) clears for this browser:
 
-## Build (static output)
+- Lifetime stats, badges, stake tier (back to $1 max bet)
+- Current hand, pot, chips on the table
+- Table felt/logo (back to **$1** tier)
+
+It does **not** clear your chosen **dealer mode** (`dice21_mode_v1` in `localStorage`). For a full wipe of prefs, clear site data or use a private window.
+
+---
+
+## Requirements & run locally
+
+- **Node.js** 18+
+
+```bash
+npm install
+npm run dev
+```
+
+Vite prints the URL (often `http://localhost:5173/`; the port changes if that one is busy). Open **`/`** or **`/dice-21/`** for Dice 21, **`/poker-dice/`** for Poker Dice.
+
+---
+
+## Multiplayer (WebSocket)
+
+Multiplayer is **not** the Vite dev server. Run the relay:
+
+```bash
+npm run mp-server
+```
+
+Default **`ws://localhost:8788`**. In another terminal, `npm run dev` and open the game; the client connects to the **same host** on port **8788** (or `wss:` on HTTPS).
+
+- **Host** creates a room and shares a **4-character code** (ambiguous chars like `0`/`O` avoided).
+- **Guest** joins with the code; a third player gets “room full.”
+- **Dice 21:** Host plays the full game; **guest spectates** with a live HUD sync (guest controls disabled).
+- **Poker Dice:** Same server and room flow; shared deterministic rolls from a match seed.
+
+If `mp-server` isn’t running, Dice 21 can show a WebSocket error in the multiplayer panel.
+
+---
+
+## Configuration (multiplayer)
+
+| Detail | Meaning |
+|--------|--------|
+| **`PORT`** | WebSocket listen port. Default **`8788`**. Example: `PORT=9000 npm run mp-server` |
+| **Client** | Bundled clients assume **8788** unless you change `public/assets/dice21-mp.js` (and Poker Dice’s bundle) and rebuild. |
+
+If you change the server port, either keep **8788** or update the client to match.
+
+---
+
+## Production & networking
+
+- **`wss://`** on HTTPS needs TLS on that port or a reverse proxy that upgrades WebSockets to `mp-server`.
+- Remote play: both browsers must reach the **same** WS host/port (LAN IP, or a server with **8788** open/proxied).
+- **`mp-server` is in-memory**—restarting clears rooms; no DB.
+
+---
+
+## Build
 
 ```bash
 npm run build
 ```
 
-Output goes to `dist/`. Serve `dist/` with any static host; **multiplayer still requires** `mp-server` (or equivalent) reachable at the host/port the client expects.
+Output: `dist/`. Serve it as static files; multiplayer still needs `mp-server` (or equivalent) where the client expects it.
 
-## Scripts
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Vite dev server |
+| `npm run build` | Production build → `dist/` |
+| `npm run mp-server` | WebSocket relay (`mp-server.mjs`) |
 
-| Script        | Purpose |
-|---------------|---------|
-| `npm run dev` | Vite dev server (games + HMR) |
-| `npm run build` | Production build to `dist/` |
-| `npm run mp-server` | WebSocket multiplayer relay (`mp-server.mjs`) |
+---
+
+## Development notes (Dice 21 bundle)
+
+- Game logic and 3D live in the Dice 21 **main chunk** under `public/assets/` (hashed name in some builds, e.g. `main-BosaNfoM.js`; the entry script `dice21-*.js` imports it).
+- **`?previewStakes=1|5|25|100`** on `/dice-21/` forces a **visual tier preview** for art/layout (does not write lifetime stats). Omit the query to use real progression. Dev: `window.__d21Dev.previewStakesUp(n)` does the same in-session.
+- Lifetime counters are initialized at **module top** so tier logic is safe when the logo mesh is created at startup (avoids temporal-dead-zone issues with `lsH` / `lsW`).
+
+---
 
 ## Repository
 
