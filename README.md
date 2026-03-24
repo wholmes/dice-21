@@ -83,6 +83,45 @@ Tier applies on load, when you unlock a new tier, and after **Reset all progress
 
 ---
 
+## Dice 21 — URL query parameters
+
+Query parameters are read from **`/dice-21/`** (and the same path on your dev host). Combine them with **`&`** — order does not matter.
+
+**Important:** The home redirect **`/` → `/dice-21/`** does **not** keep the query string. Always use **`/dice-21/?…`** when testing overrides.
+
+### All parameters
+
+| Parameter | Values | Read by | Effect |
+|-----------|--------|---------|--------|
+| **`previewStakes`** | `1`, `5`, `25`, `100`, or **empty** | Main game bundle | **Preview tier** for this load only: max bet, bankroll, felt, logo, chip cap, stake hint. Does **not** change lifetime stats in `localStorage`. Invalid number → **`5`**. Empty → **`5`**. |
+| **`mode`** | `classic`, `sharp`, `chill`, `fortune` | Main bundle | Starting **dealer mode** for this load. Overrides `localStorage` `dice21_mode_v1` until you change mode in the UI (then the UI saves as usual). |
+| **`shakeHint`** | `0` or `1` | Main bundle | **`1`** = show shake overlay hints; **`0`** = hide. Overrides the saved `dice21_shake_hint_overlay` preference for this session until you toggle the checkbox. |
+| **`reducedMotion`** | `1` or `true` | Main bundle | Forces **reduced-motion** behavior (simpler rolls, no shake overlay path, etc.) as if `prefers-reduced-motion: reduce` were on. |
+| **`guest`** | `1` or `true` | `dice21-mp.js` | Pretend **multiplayer guest** (spectator): disables deal/bet/hit/stand, chips, mode, reset—useful for layout or HUD testing without a WebSocket room. |
+| **`wsPort`** or **`mpPort`** | `1`–`65535` (e.g. `8788`) | `dice21-mp.js` | WebSocket port for **`mp-server`** (default **8788**). Use if your relay listens on a non-default port. |
+
+### `previewStakes` details
+
+- **Runtime:** `window.__d21Dev.previewStakesUp(n)` matches URL behavior and may open the stakes-up modal (`n` in `{1,5,25,100}`; invalid → **`5`**).
+- On load, a **delayed** call may also open the stakes-up modal when `previewStakes` is present (visibility for testing).
+- **Remove** `previewStakes` from the URL and reload to use your real **career** tier again.
+
+### Example URLs
+
+```text
+/dice-21/?previewStakes=100
+/dice-21/?previewStakes=100&mode=fortune&reducedMotion=1
+/dice-21/?guest=1&shakeHint=0
+/dice-21/?previewStakes=25&mode=sharp&wsPort=9000
+http://localhost:5173/dice-21/?previewStakes=1&mode=classic
+```
+
+### Poker Dice
+
+No URL overrides are implemented on **`/poker-dice/`** in this repo (multiplayer still uses the same `wsPort` / `mpPort` idea only on pages that load **`dice21-mp.js`**, i.e. Dice 21).
+
+---
+
 ## Dice 21 — reset progress
 
 **Reset all progress** (Lifetime section) clears for this browser:
@@ -165,7 +204,7 @@ Output: `dist/`. Serve it as static files; multiplayer still needs `mp-server` (
 ## Development notes (Dice 21 bundle)
 
 - Game logic and 3D live in the Dice 21 **main chunk** under `public/assets/` (hashed name in some builds, e.g. `main-BosaNfoM.js`; the entry script `dice21-*.js` imports it).
-- **`?previewStakes=1|5|25|100`** on `/dice-21/` forces a **visual tier preview** for art/layout (does not write lifetime stats). Omit the query to use real progression. Dev: `window.__d21Dev.previewStakesUp(n)` does the same in-session.
+- **URL query overrides** (`previewStakes`, `mode`, `shakeHint`, `reducedMotion`, `guest`, `wsPort` / `mpPort`) are documented in **[Dice 21 — URL query parameters](#dice-21--url-query-parameters)**.
 - Lifetime counters are initialized at **module top** so tier logic is safe when the logo mesh is created at startup (avoids temporal-dead-zone issues with `lsH` / `lsW`).
 
 ---

@@ -6,9 +6,22 @@ const SESSION_KEY = 'd21_mp_session'
 const ROOM_KEY = 'd21_mp_room'
 const ROLE_KEY = 'd21_mp_role'
 
+function wsPortFromUrl() {
+  try {
+    const sp = new URLSearchParams(location.search)
+    const raw = sp.get('wsPort') || sp.get('mpPort')
+    if (raw == null || raw === '') return 8788
+    const n = parseInt(String(raw), 10)
+    if (Number.isFinite(n) && n > 0 && n < 65536) return n
+  } catch {
+    /* ignore */
+  }
+  return 8788
+}
+
 function wsUrl() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${proto}//${location.hostname}:8788`
+  return `${proto}//${location.hostname}:${wsPortFromUrl()}`
 }
 
 let socket = null
@@ -409,3 +422,10 @@ function init() {
 }
 
 init()
+
+try {
+  const g = new URLSearchParams(location.search).get('guest')
+  if (g === '1' || g === 'true') setRole('guest')
+} catch {
+  /* ignore */
+}
