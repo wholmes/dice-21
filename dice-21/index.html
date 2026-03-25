@@ -1,9 +1,12 @@
 <!DOCTYPE html>
+<!-- Dice 21 — Copyright © Whittfield Holmes. All rights reserved. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0c12" />
+    <meta name="author" content="Whittfield Holmes" />
+    <meta name="copyright" content="Copyright © Whittfield Holmes" />
     <title>Dice 21</title>
     <link rel="icon" href="/assets/favicon-D8NRme3X.svg" type="image/svg+xml" />
     <style>
@@ -33,7 +36,7 @@
         left: max(12px, env(safe-area-inset-left));
         width: min(88vw, 280px);
         max-width: 280px;
-        pointer-events: none;
+        pointer-events: auto;
         user-select: none;
       }
       .d21-badge-showcase::before {
@@ -45,8 +48,8 @@
         height: 200px;
         background: radial-gradient(
           ellipse 80% 70% at 20% 25%,
-          rgba(8, 10, 16, 0.5) 0%,
-          rgba(8, 10, 16, 0.18) 45%,
+          rgba(8, 10, 16, 0.38) 0%,
+          rgba(8, 10, 16, 0.12) 45%,
           transparent 72%
         );
         pointer-events: none;
@@ -55,12 +58,17 @@
       .d21-badge-showcase-inner {
         padding: 10px 12px 12px;
         border-radius: 14px;
-        background: linear-gradient(165deg, rgba(34, 38, 52, 0.94), rgba(16, 18, 28, 0.97));
-        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: linear-gradient(165deg, rgba(34, 38, 52, 0.82), rgba(16, 18, 28, 0.86));
+        border: 1px solid rgba(255, 255, 255, 0.18);
         box-shadow:
-          0 12px 36px rgba(0, 0, 0, 0.5),
+          0 12px 36px rgba(0, 0, 0, 0.38),
           0 0 0 1px rgba(0, 0, 0, 0.35) inset,
           0 0 24px rgba(232, 200, 122, 0.06);
+        max-height: min(58vh, 420px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-gutter: stable;
       }
       .d21-badge-showcase-title {
         margin: 0 0 8px;
@@ -320,9 +328,6 @@
         h1 {
           font-size: 15px;
         }
-        .totals {
-          font-size: 13px;
-        }
       }
       #ui .panel {
         pointer-events: auto;
@@ -345,16 +350,34 @@
         gap: 10px;
       }
       .totals {
-        font-size: 15px;
+        font-size: 20px;
         font-variant-numeric: tabular-nums;
       }
       .totals strong {
         color: #f0d78c;
         font-weight: 700;
+        font-size: 1.15em;
+      }
+      @media (max-width: 640px) {
+        .totals {
+          font-size: 17px;
+        }
+        .totals strong {
+          font-size: 1.12em;
+        }
       }
       .label-muted {
         font-size: 12px;
         color: #7a8a9e;
+      }
+      .d21-copyright {
+        margin: 14px 0 0;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        font-size: 11px;
+        line-height: 1.35;
+        color: #5a6a7e;
+        letter-spacing: 0.02em;
       }
       /* Collapsed = one line; open = breakdown + clear (saves vertical space) */
       .lifetime-details {
@@ -409,6 +432,12 @@
         display: flex;
         flex-direction: column;
         gap: 6px;
+        max-height: min(42vh, 340px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-right: 4px;
+        scrollbar-gutter: stable;
       }
       .ach-row {
         display: flex;
@@ -829,11 +858,65 @@
         top: max(10px, env(safe-area-inset-top));
         right: max(10px, env(safe-area-inset-right));
         display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 8px;
+        pointer-events: auto;
+        max-width: min(340px, calc(100vw - 20px));
+      }
+      .d21-mp-col {
+        display: flex;
         flex-direction: column;
         align-items: flex-end;
         gap: 0;
-        pointer-events: auto;
-        max-width: min(300px, calc(100vw - 20px));
+        min-width: 0;
+      }
+      .d21-cam-zoom {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 6px;
+        border-radius: 999px;
+        background: rgba(14, 16, 24, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+        flex-shrink: 0;
+      }
+      .d21-cam-zoom-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        width: 32px;
+        min-width: 32px;
+        max-width: 32px;
+        height: 32px;
+        min-height: 32px;
+        max-height: 32px;
+        aspect-ratio: 1;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.08);
+        color: #e4e8f0;
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .d21-cam-zoom-btn svg {
+        display: block;
+        flex-shrink: 0;
+      }
+      .d21-cam-zoom-btn:hover {
+        background: rgba(255, 255, 255, 0.14);
+      }
+      .d21-cam-zoom-btn:focus-visible {
+        outline: 2px solid rgba(232, 200, 122, 0.55);
+        outline-offset: 2px;
       }
       #d21mpTrigger {
         display: inline-flex;
@@ -1599,36 +1682,56 @@
         </div>
       </div>
     <div id="d21mpWrap">
-      <button
-        type="button"
-        id="d21mpTrigger"
-        aria-expanded="false"
-        aria-controls="d21mpPopover"
-        title="Online multiplayer"
-      >
-        <span class="d21mp-trigger-dot" aria-hidden="true"></span>
-        <span id="d21mpTriggerLabel">Multiplayer</span>
-      </button>
-      <div id="d21mpPopover" role="dialog" aria-label="Online multiplayer" aria-hidden="true" hidden>
-        <div id="d21mpPanel">
-          <h2>Online (2 players)</h2>
-          <p class="mp-note">
-            Host creates a room and shares the code; the other player joins. Guest sees the same numbers (host plays).
-            Same server as Poker Dice: <code>npm run mp-server</code> · port <code>8788</code>.
-          </p>
-          <div id="d21mpStatus">Offline — solo play</div>
-          <div class="d21-mp-row">
-            <button type="button" class="ghost" id="d21mpCreateBtn">Create room</button>
-            <div class="d21-mp-join">
-              <input id="d21mpJoinInput" type="text" maxlength="4" autocomplete="off" placeholder="CODE" title="Room code" />
-              <button type="button" class="ghost" id="d21mpJoinBtn">Join</button>
+      <div class="d21-cam-zoom" id="d21CamZoomGroup" aria-label="Camera zoom">
+        <button type="button" class="d21-cam-zoom-btn" id="d21CamZoomOut" title="Zoom out" aria-label="Zoom out">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm-2.5-4h5v1h-5v-1z"
+            />
+          </svg>
+        </button>
+        <button type="button" class="d21-cam-zoom-btn" id="d21CamZoomIn" title="Zoom in" aria-label="Zoom in">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h1v2h2v1h-2v2h-1v-2h-2v-1h2V10z"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="d21-mp-col">
+        <button
+          type="button"
+          id="d21mpTrigger"
+          aria-expanded="false"
+          aria-controls="d21mpPopover"
+          title="Online multiplayer"
+        >
+          <span class="d21mp-trigger-dot" aria-hidden="true"></span>
+          <span id="d21mpTriggerLabel">Multiplayer</span>
+        </button>
+        <div id="d21mpPopover" role="dialog" aria-label="Online multiplayer" aria-hidden="true" hidden>
+          <div id="d21mpPanel">
+            <h2>Online (2 players)</h2>
+            <p class="mp-note">
+              Host creates a room and shares the code; the other player joins. Guest sees the same numbers (host plays).
+              Same server as Poker Dice: <code>npm run mp-server</code> · port <code>8788</code>.
+            </p>
+            <div id="d21mpStatus">Offline — solo play</div>
+            <div class="d21-mp-row">
+              <button type="button" class="ghost" id="d21mpCreateBtn">Create room</button>
+              <div class="d21-mp-join">
+                <input id="d21mpJoinInput" type="text" maxlength="4" autocomplete="off" placeholder="CODE" title="Room code" />
+                <button type="button" class="ghost" id="d21mpJoinBtn">Join</button>
+              </div>
             </div>
-          </div>
-          <div id="d21mpRoomLine" hidden>Room <strong id="d21mpCode"></strong></div>
-          <p id="d21mpSpectate" hidden>Spectating — HUD syncs from host; 3D view may lag.</p>
-          <div class="d21-mp-row">
-            <button type="button" class="ghost" id="d21mpReconnectBtn" hidden>Resume session</button>
-            <button type="button" class="ghost" id="d21mpDisconnectBtn" hidden>Disconnect</button>
+            <div id="d21mpRoomLine" hidden>Room <strong id="d21mpCode"></strong></div>
+            <p id="d21mpSpectate" hidden>Spectating — HUD syncs from host; 3D view may lag.</p>
+            <div class="d21-mp-row">
+              <button type="button" class="ghost" id="d21mpReconnectBtn" hidden>Resume session</button>
+              <button type="button" class="ghost" id="d21mpDisconnectBtn" hidden>Disconnect</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1766,7 +1869,12 @@
         <span class="d21-dock-toggle-switch" aria-hidden="true"><span class="d21-dock-toggle-knob"></span></span>
         <span class="d21-dock-toggle-text">Shake hint</span>
       </label>
-      <label class="d21-dock-toggle" title="Cycle through all room ambience tracks (ignores stake tier)">
+      <label class="d21-dock-toggle" title="Loop casino room bed (19130) under the DJ playlist">
+        <input type="checkbox" id="d21RoomAmbPref" class="d21-dock-toggle-input" checked />
+        <span class="d21-dock-toggle-switch" aria-hidden="true"><span class="d21-dock-toggle-knob"></span></span>
+        <span class="d21-dock-toggle-text">Room ambience</span>
+      </label>
+      <label class="d21-dock-toggle" title="Random tracks from /audio/dj/*.wav (see manifest.json; run npm run dj:manifest after adding files)">
         <input type="checkbox" id="d21AmbDjPref" class="d21-dock-toggle-input" checked />
         <span class="d21-dock-toggle-switch" aria-hidden="true"><span class="d21-dock-toggle-knob"></span></span>
         <span class="d21-dock-toggle-text">Ambience DJ</span>
@@ -1847,10 +1955,18 @@
           <button type="button" class="secondary" id="btnHit" disabled>Hit</button>
           <button type="button" class="secondary" id="btnStand" disabled>Stand</button>
         </div>
+        <p class="d21-copyright">
+          Dice 21 · © <span class="copyright-year"></span> Whittfield Holmes · All rights reserved
+        </p>
       </div>
     </div>
     </div>
     <script type="module" src="/assets/dice21-mp.js"></script>
     <script src="/assets/dice21-mobile-ui.js" defer></script>
+    <script>
+      for (const el of document.querySelectorAll('.copyright-year')) {
+        el.textContent = String(new Date().getFullYear())
+      }
+    </script>
   </body>
 </html>

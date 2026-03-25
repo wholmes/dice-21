@@ -115,18 +115,19 @@ When the **visible center stack** gains chips, one shot is chosen from:
 | **`freesound_community-allinpushchips2-39133.wav`** | Smaller stacks (below the “big pile” threshold). |
 | **`freesound_community-allinpushchips-96121.wav`** | **Large** stacks—default when stack count **≥ 12** (override with **`chipPushBigMin`**). |
 
-### Room ambience (by max stake tier)
+### Room ambience & music (DJ)
 
-Looped **background** bed (low gain). Switches when the table theme / tier updates.
+**Room ambience** is **`freesound_community-casino-ambiance-19130.wav`** (`ambRoom`): one looped casino bed when **Room ambience** is on. **Ambience DJ** is a **playlist** of one-shots—**silk** then **lush**, then repeat—layered on top when **Ambience DJ** is on (independent buffers from the room track).
 
-| File | When it plays |
-|------|----------------|
-| **`freesound_community-bruit-2-casino-56939.wav`** | **$1** max bet tier (“small room”). |
-| **`rhythm-biscuit-konstantin-garbuzyuk-main-version-46631-01-42.wav`** | **$5** max bet tier. |
-| **`silk-icosphere-main-version-15772-01-30.wav`** | **$25** max bet tier (premium stakes table). |
-| **`lush-21-on-the-block-main-version-43576-01-53.wav`** | **$100** max bet tier (high roller). |
+| File | Role |
+|------|------|
+| **`freesound_community-casino-ambiance-19130.wav`** | **Room ambience** only (looped; optional Table dock **Room ambience**). |
+| **`silk-icosphere-main-version-15772-01-30.wav`** | **Ambience DJ** playlist (first slot). |
+| **`lush-21-on-the-block-main-version-43576-01-53.wav`** | **Ambience DJ** playlist (second slot). |
 
-**Ambience DJ** is **on by default** (checkbox in the Table dock, or **`?djAmbience=1`** / omit URL to follow `localStorage`). It plays **all four** tracks in rotation as each clip ends—**independent of** max stake tier. Turn it off for stake-based ambience only.
+**Room ambience** is **on by default** (`dice21_room_amb` in `localStorage`, or **`?roomAmbience=1`**). Turn it off for DJ-only or silence.
+
+**Ambience DJ** is **on by default** (checkbox in the Table dock, **`?djAmbience=1`**, or `dice21_amb_dj`). Turn it off to hear only the room bed (if **Room ambience** is on).
 
 **Reduced motion** (`prefers-reduced-motion` or **`?reducedMotion=1`**) disables ambience and most other SFX.
 
@@ -134,7 +135,7 @@ Looped **background** bed (low gain). Switches when the table theme / tier updat
 
 | File | When it plays |
 |------|----------------|
-| **`freesound_community-cash-register-purchase-87313.wav`** | **Deal / bet:** when your ante is committed at the start of a hand. |
+| **`freesound_community-cash-register-purchase-87313.wav`** | **Payout:** when you **collect** (win the pot, **push pay** on a tie, or **win** double-or-nothing). |
 | **`freesound_community-player-wins-94889.wav`** | **You win** the hand, or **win** double-or-nothing. |
 
 ---
@@ -158,7 +159,8 @@ Query parameters are read from **`/dice-21/`** (and the same path on your dev ho
 | **`diceShakeSfxMs`** | e.g. `-40` to `500` (ms) | Main bundle | **Shake loop** schedule offset (parsed in the bundle; very large values like **`-40000`** are mapped so they behave like small negative seconds, not multi‑second delays). |
 | **`diceShakeSfxOffsetMs`** | `0`–`950` (ms) | Main bundle | **Skip** this many milliseconds from the **start** of the shake WAV (useful if the file has silence at the front). |
 | **`chipPushBigMin`** | `4`–`28` | Main bundle | Minimum **visible stack count** to use the **large** pot chip-push clip (`allinpushchips-96121`). Default **12**. |
-| **`djAmbience`** | `1`, `true`, `0`, or `false` | Main bundle | **`1`** / **`true`**: **Ambience DJ** — cycles through all four room ambience tracks in order (no looping per track; **ignores stake tier**). **`0`** / **`false`**: off. **Omitted** = **`dice21_amb_dj`** in `localStorage` if set (`0` / `1`), else **on** by default (same as the **Ambience DJ** checkbox in the Table dock). |
+| **`roomAmbience`** | `1`, `true`, `0`, or `false` | Main bundle | **`1`** / **`true`**: **Room ambience** (looped **19130** casino bed). **`0`** / **`false`**: off. **Omitted** = **`dice21_room_amb`** in `localStorage` if set (`0` / `1`), else **on** by default (same as the **Room ambience** checkbox in the Table dock). |
+| **`djAmbience`** | `1`, `true`, `0`, or `false` | Main bundle | **`1`** / **`true`**: **Ambience DJ** — **silk → lush** playlist (one-shots, chained). **`0`** / **`false`**: off. **Omitted** = **`dice21_amb_dj`** in `localStorage` if set (`0` / `1`), else **on** by default (same as the **Ambience DJ** checkbox in the Table dock). |
 | **`guest`** | `1` or `true` | `dice21-mp.js` | Pretend **multiplayer guest** (spectator): disables deal/bet/hit/stand, chips, mode, reset—useful for layout or HUD testing without a WebSocket room. |
 | **`wsPort`** or **`mpPort`** | `1`–`65535` (e.g. `8788`) | `dice21-mp.js` | WebSocket port for **`mp-server`** (default **8788**). Use if your relay listens on a non-default port. |
 
@@ -271,8 +273,16 @@ Output: `dist/`. Serve it as static files; multiplayer still needs `mp-server` (
 
 - Game logic and 3D live in the Dice 21 **main chunk** under `public/assets/` (hashed name in some builds, e.g. `main-BosaNfoM.js`; the entry script `dice21-*.js` imports it).
 - **Table SFX** (impacts, shake loop, pot chip pushes, room ambience, cash register, win sting, etc.) live under **`public/audio/`**; see **[Dice 21 — audio assets (public/audio)](#dice-21--audio-assets-publicaudio)**.
-- **URL query overrides** (`previewStakes`, `mode`, `shakeHint`, `reducedMotion`, `diceSfxMs`, `diceSfxHitAt`, `diceShakeSfxMs`, `diceShakeSfxOffsetMs`, `chipPushBigMin`, `djAmbience`, `guest`, `wsPort` / `mpPort`) are documented in **[Dice 21 — URL query parameters](#dice-21--url-query-parameters)**.
+- **URL query overrides** (`previewStakes`, `mode`, `shakeHint`, `reducedMotion`, `diceSfxMs`, `diceSfxHitAt`, `diceShakeSfxMs`, `diceShakeSfxOffsetMs`, `chipPushBigMin`, `roomAmbience`, `djAmbience`, `guest`, `wsPort` / `mpPort`) are documented in **[Dice 21 — URL query parameters](#dice-21--url-query-parameters)**.
 - Lifetime counters are initialized at **module top** so tier logic is safe when the logo mesh is created at startup (avoids temporal-dead-zone issues with `lsH` / `lsW`).
+
+---
+
+## Copyright
+
+**Dice 21**, **Poker Dice**, and this repository’s original code and assets are **© Whittfield Holmes** (or the years stated in each file). All rights reserved unless otherwise noted.
+
+Third-party audio and other credited assets remain under their respective licenses; see **[Dice 21 — audio assets (public/audio)](#dice-21--audio-assets-publicaudio)** and file headers where applicable.
 
 ---
 

@@ -1,6 +1,8 @@
 /**
  * Mobile layout: corner docks move into a bottom sheet; quick bar keeps play + tools reachable.
  * Also persists collapsible UI (Lifetime / Badges details, rules panel) in localStorage.
+ *
+ * Copyright © Whittfield Holmes. All rights reserved.
  */
 const MQ = '(max-width: 640px)'
 

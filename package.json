@@ -1,8 +1,12 @@
 {
   "name": "poker-dice",
   "private": true,
+  "author": "Whittfield Holmes",
   "type": "module",
   "scripts": {
+    "dj:manifest": "node scripts/generate-dj-manifest.mjs",
+    "predev": "npm run dj:manifest",
+    "prebuild": "npm run dj:manifest",
     "dev": "vite",
     "build": "vite build",
     "mp-server": "node mp-server.mjs"

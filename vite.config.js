@@ -1,3 +1,8 @@
+/**
+ * Dice 21 / Poker Dice — Vite multi-page config.
+ *
+ * Copyright © Whittfield Holmes. All rights reserved.
+ */
 import { defineConfig } from 'vite'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'

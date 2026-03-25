@@ -1,6 +1,8 @@
 /**
  * WebSocket multiplayer relay for Poker Dice + Dice 21 (port 8788).
  * Run: npm run mp-server   (and npm run dev in another terminal)
+ *
+ * Copyright © Whittfield Holmes. All rights reserved.
  */
 import { WebSocketServer } from 'ws'
 import { randomInt, randomUUID } from 'crypto'

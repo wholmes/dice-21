@@ -1,6 +1,8 @@
 /**
  * Dice 21 — two-player over the same WebSocket server as Poker Dice (port 8788).
  * Host plays the full game; guest spectates with live HUD sync (same room protocol).
+ *
+ * Copyright © Whittfield Holmes. All rights reserved.
  */
 const SESSION_KEY = 'd21_mp_session'
 const ROOM_KEY = 'd21_mp_room'
