@@ -12,8 +12,12 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 /**
  * Multi-page: `/` redirects to Dice 21; `poker-dice/` = Poker Dice.
  * Prebuilt bundles live under `public/assets/` (served at `/assets/...`).
+ *
+ * GitHub Pages project URL is `https://<user>.github.io/<repo>/`, so production
+ * builds must use base `/dice-21/` or scripts load from the site root and 404.
  */
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/dice-21/' : '/',
   root,
   publicDir: 'public',
   appType: 'mpa',
@@ -26,4 +30,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))
