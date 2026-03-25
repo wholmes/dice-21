@@ -2,6 +2,8 @@
 
 Two browser games in one [Vite](https://vitejs.dev/) multi-page app: **Dice 21** is the home page (`/` and `/dice-21/`), and **Poker Dice** lives at `/poker-dice/`. Both can use an optional **Node WebSocket server** for online two-player sessions.
 
+**Deploy / GitHub Pages / `BASE_PATH`:** see **[DEPLOY.md](./DEPLOY.md)**.
+
 ---
 
 ## Dice 21 — how to play
@@ -213,7 +215,7 @@ npm run dev
 
 Vite prints the URL (often `http://localhost:5173/`; the port changes if that one is busy). Open **`/`** or **`/dice-21/`** for Dice 21, **`/poker-dice/`** for Poker Dice.
 
-**Dev vs production URL base:** `npm run dev` always uses **`base: '/'`**. For production builds, **`base`** must match the folder your static host uses (see **Build** below). Configure with **`BASE_PATH`** when running **`npm run build`** (see **`vite.config.js`**).
+**Dev vs production URL base:** `npm run dev` always uses **`base: '/'`**. Production builds must use a **`base`** that matches the URL path where **`dist/`** is hosted (e.g. **`/dice-21/`** vs **`/arcade/`**). See **[DEPLOY.md](./DEPLOY.md)** for commands, GitHub Pages URLs, and the post-build patch.
 
 ---
 
@@ -255,56 +257,33 @@ If you change the server port, either keep **8788** or update the client to matc
 
 ---
 
-## Build & hosting the static game (separate repo)
+## Build & hosting (static site)
 
-This **source repo** is for development and backup: **do not commit** build output (`dist/` and `docs/` are **gitignored**). Treat **`dice-21/`**, **`poker-dice/`**, **`public/`**, and root **`index.html`** as the source of truth.
+This **source repo** uses **`dice-21/`**, **`poker-dice/`**, **`public/`**, and root **`index.html`** as sources; **`dist/`** is **gitignored** — build before publishing.
 
-Use a **second repository** (or any static host) that contains **only** the production files players load in the browser.
+**Full guide:** **[DEPLOY.md](./DEPLOY.md)** — which **`npm run build`** variant to use for **`github.io/dice-21/`** vs **`github.io/arcade/dice-21/`**, why **`base`** must match the live URL, the **`patch-dice21-entry`** step, Tap to play / 404 troubleshooting, and **`BASE_PATH`** overrides.
 
-### 1. Build locally
+**Short version:**
 
 ```bash
 npm install
-npm run build
+npm run build              # default: base /dice-21/ — GitHub Pages for this repo as project site
+# or
+npm run build:arcade       # base /arcade/ — site under .../arcade/dice-21/
 ```
 
-Output goes to **`dist/`** (ignored by git here). **`prebuild`** runs first (e.g. DJ manifest).
-
-Set **`BASE_PATH`** to match how the **static** site is served. If the game will live at:
-
-`https://<you>.github.io/<static-repo-name>/`
-
-then the path prefix is **`/<static-repo-name>/`**:
-
-```bash
-BASE_PATH=/<static-repo-name>/ npm run build
-```
-
-Example: repo **`dice-21-play`** → `BASE_PATH=/dice-21-play/ npm run build`.
-
-If **`BASE_PATH`** is omitted, the build defaults to **`/dice-21/`** (handy for quick checks; your static repo name may differ, so set **`BASE_PATH`** explicitly for real deploys).
-
-### 2. Publish `dist/` to the static repo
-
-Copy **everything inside** **`dist/`** to the root of your static repository (or into **`docs/`** on **`main`** if you use GitHub Pages “Deploy from branch” with the **`/docs`** folder). Commit and push **that** repo.
-
-Enable **GitHub Pages** on the **static** repo (e.g. **Deploy from branch** → **`main`** → **`/`** or **`/docs`**, depending on where you put the files).
-
-### 3. Preview the production build here
-
-```bash
-npm run preview
-```
-
-Uses the same **`base`** as the last **`npm run build`** (defaults if you didn’t set **`BASE_PATH`**).
+Then deploy **everything inside** **`dist/`** to your static host (e.g. GitHub Pages branch or **`docs/`** folder).
 
 ### Scripts
 
 | Script | Purpose |
 |--------|---------|
 | `npm run dev` | Vite dev server (`base` `/`) |
-| `npm run build` | Production build → **`dist/`** (set **`BASE_PATH`** for deploy) |
-| `npm run preview` | Preview **`dist/`** locally |
+| `npm run build` | Production build → **`dist/`** (default **`base`**: **`/dice-21/`**) + DJ manifest + entry-chunk patch |
+| `npm run build:arcade` | Same, with **`base`**: **`/arcade/`** (nested arcade deploy) |
+| `npm run build:static` | **`base`**: **`./`** — local static server testing from **`dist/`** |
+| `npm run preview` | Preview last **`dist/`** build (same **`base`** as last build) |
+| `npm run preview:arcade` | Preview with **`base` `/arcade/`** (after **`build:arcade`**) |
 | `npm run mp-server` | WebSocket relay (`mp-server.mjs`) |
 
 Multiplayer still needs **`mp-server`** (or equivalent) reachable where the client expects it.
