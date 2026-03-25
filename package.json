@@ -8,9 +8,9 @@
     "predev": "npm run dj:manifest",
     "prebuild": "npm run dj:manifest",
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/patch-dice21-entry.mjs",
+    "build:static": "BASE_PATH=./ vite build && node scripts/patch-dice21-entry.mjs",
     "build:arcade": "BASE_PATH=/arcade/ vite build",
-    "build:abs-dice21": "BASE_PATH=/dice-21/ vite build",
     "preview": "vite preview",
     "preview:arcade": "BASE_PATH=/arcade/ vite preview",
     "mp-server": "node mp-server.mjs"

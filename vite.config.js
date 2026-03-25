@@ -17,15 +17,14 @@ const root = fileURLToPath(new URL('.', import.meta.url))
  * sites live under `https://<user>.github.io/<repo>/`). Set when building:
  *   BASE_PATH=/your-static-repo-name/ npm run build
  * Use `/` only if the site is served at the domain root (e.g. custom domain).
- * If BASE_PATH is unset, defaults to `./` (relative) so `dist/` works with any
- * static server (e.g. `python -m http.server`) and asset URLs resolve to
- * `../assets/...` from `dice-21/index.html`. Use `BASE_PATH=/dice-21/` if you
- * must emit absolute `/dice-21/...` URLs for a specific host.
+ * If BASE_PATH is unset, defaults to `/dice-21/` so GitHub Pages project sites
+ * (`https://<user>.github.io/dice-21/`) resolve scripts and assets. For a plain
+ * folder test (`python -m http.server` from dist), use `npm run build:static`.
  */
 const productionBase =
   process.env.BASE_PATH !== undefined && process.env.BASE_PATH !== ''
     ? process.env.BASE_PATH
-    : './'
+    : '/dice-21/'
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? productionBase : '/',
@@ -33,6 +32,7 @@ export default defineConfig(({ command }) => ({
   publicDir: 'public',
   appType: 'mpa',
   build: {
+    modulePreload: false,
     outDir: 'dist',
     rollupOptions: {
       input: {
