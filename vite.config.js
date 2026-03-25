@@ -13,19 +13,24 @@ const root = fileURLToPath(new URL('.', import.meta.url))
  * Multi-page: `/` redirects to Dice 21; `poker-dice/` = Poker Dice.
  * Prebuilt bundles live under `public/assets/` (served at `/assets/...`).
  *
- * GitHub Pages project URL is `https://<user>.github.io/<repo>/`, so production
- * builds must use base `/dice-21/` or scripts load from the site root and 404.
- *
- * Production build output goes to `docs/` so you can enable Pages: Deploy from
- * branch main → /docs without Actions artifact deploy (commit `docs/` after build).
+ * Production `base` must match where the site is hosted (GitHub Pages project
+ * sites live under `https://<user>.github.io/<repo>/`). Set when building:
+ *   BASE_PATH=/your-static-repo-name/ npm run build
+ * Use `/` only if the site is served at the domain root (e.g. custom domain).
+ * If BASE_PATH is unset, defaults to `/dice-21/` for convenience.
  */
+const productionBase =
+  process.env.BASE_PATH !== undefined && process.env.BASE_PATH !== ''
+    ? process.env.BASE_PATH
+    : '/dice-21/'
+
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/dice-21/' : '/',
+  base: command === 'build' ? productionBase : '/',
   root,
   publicDir: 'public',
   appType: 'mpa',
   build: {
-    outDir: 'docs',
+    outDir: 'dist',
     rollupOptions: {
       input: {
         home: resolve(root, 'index.html'),
