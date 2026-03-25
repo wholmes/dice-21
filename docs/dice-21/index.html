@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<!-- Dice 21 — Copyright © Whittfield Holmes. All rights reserved. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0c12" />
+    <meta name="author" content="Whittfield Holmes" />
+    <meta name="copyright" content="Copyright © Whittfield Holmes" />
+    <title>Dice 21</title>
+    <link rel="icon" href="/dice-21/assets/favicon-D8NRme3X.svg" type="image/svg+xml" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        background: #0a0c12;
+        color: #e4e8f0;
+        touch-action: manipulation;
+      }
+      canvas {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+      }
+      /* Upper-left: earned badge artwork only when unlocked; locked slots show a neutral placeholder */
+      .d21-badge-showcase {
+        position: fixed;
+        z-index: 2;
+        top: max(12px, env(safe-area-inset-top));
+        left: max(12px, env(safe-area-inset-left));
+        width: min(88vw, 280px);
+        max-width: 280px;
+        pointer-events: auto;
+        user-select: none;
+      }
+      .d21-badge-showcase::before {
+        content: "";
+        position: absolute;
+        left: -28px;
+        top: -20px;
+        width: min(95vw, 320px);
+        height: 200px;
+        background: radial-gradient(
+          ellipse 80% 70% at 20% 25%,
+          rgba(8, 10, 16, 0.38) 0%,
+          rgba(8, 10, 16, 0.12) 45%,
+          transparent 72%
+        );
+        pointer-events: none;
+        z-index: -1;
+      }
+      .d21-badge-showcase-inner {
+        padding: 10px 12px 12px;
+        border-radius: 14px;
+        background: linear-gradient(165deg, rgba(34, 38, 52, 0.82), rgba(16, 18, 28, 0.86));
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow:
+          0 12px 36px rgba(0, 0, 0, 0.38),
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 0 24px rgba(232, 200, 122, 0.06);
+        max-height: min(58vh, 420px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-gutter: stable;
+      }
+      .d21-badge-showcase-title {
+        margin: 0 0 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #7a8a9e;
+      }
+      .d21-badge-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .d21-badge-slot {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        background: rgba(6, 8, 14, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition:
+          border-color 0.35s ease,
+          box-shadow 0.35s ease,
+          filter 0.35s ease,
+          opacity 0.35s ease;
+      }
+      .d21-badge-slot .d21-badge-icon {
+        width: 100%;
+        height: 100%;
+        max-width: 52px;
+        max-height: 52px;
+        display: block;
+      }
+      .d21-badge-slot__frame {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+      .d21-badge-slot__lock {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        font-size: 10px;
+        line-height: 1;
+        opacity: 0.55;
+        filter: grayscale(1);
+      }
+      .d21-badge-slot--off {
+        opacity: 0.82;
+      }
+      .d21-badge-slot--off .d21-badge-slot__lock {
+        display: block;
+      }
+      .d21-badge-slot--on {
+        filter: none;
+        opacity: 1;
+        border-color: rgba(232, 200, 122, 0.45);
+        box-shadow:
+          0 0 0 1px rgba(232, 200, 122, 0.15) inset,
+          0 0 20px rgba(232, 200, 122, 0.18);
+      }
+      .d21-badge-slot--on .d21-badge-slot__lock {
+        display: none;
+      }
+      @keyframes d21BadgePop {
+        0% {
+          transform: scale(0.92);
+        }
+        40% {
+          transform: scale(1.06);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      .d21-badge-slot--pop {
+        animation: d21BadgePop 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+        box-shadow:
+          0 0 0 1px rgba(232, 200, 122, 0.35) inset,
+          0 0 28px rgba(232, 200, 122, 0.45);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .d21-badge-slot--pop {
+          animation: none;
+        }
+      }
+      @media (max-width: 640px) {
+        .d21-badge-showcase {
+          width: min(92vw, 260px);
+          max-width: 260px;
+        }
+        .d21-badge-grid {
+          gap: 6px;
+        }
+      }
+      /* Stacking: canvas < win overlay < chip dock & felt dock < bottom panel (Deal / Hit / Stand) */
+      #ui {
+        position: fixed;
+        z-index: 3;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 12px 16px max(14px, env(safe-area-inset-bottom));
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        /* No full-bleed gradient here — it sat above #chipDock (lower z) and hid the bet chips in shadow */
+        background: none;
+      }
+      /* —— Mobile: quick bar + sheet (docks off-canvas until opened) —— */
+      .mobile-quick-bar {
+        display: none;
+        width: 100%;
+        max-width: 560px;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 6px;
+        pointer-events: auto;
+        margin: 0 0 4px;
+      }
+      .mqa-btn {
+        flex: 1;
+        min-width: 0;
+        min-height: 40px;
+        padding: 8px 6px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(18, 20, 30, 0.92);
+        color: #c8d4e8;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .mqa-btn:active:not(:disabled) {
+        background: rgba(32, 36, 52, 0.98);
+      }
+      .mqa-btn:focus-visible {
+        outline: 2px solid rgba(232, 200, 122, 0.5);
+        outline-offset: 2px;
+      }
+      .mobile-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        background: rgba(4, 6, 10, 0.55);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        pointer-events: auto;
+      }
+      /* `[hidden]` must win over `display: flex` or the Tools sheet stays visible on desktop */
+      #mobileSheetBackdrop[hidden],
+      #mobileSheet[hidden] {
+        display: none !important;
+        pointer-events: none !important;
+      }
+      .mobile-sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 6;
+        max-height: min(72vh, 520px);
+        display: flex;
+        flex-direction: column;
+        border-radius: 16px 16px 0 0;
+        background: rgba(14, 16, 24, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-bottom: none;
+        box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.55);
+        padding-bottom: env(safe-area-inset-bottom);
+        pointer-events: auto;
+      }
+      .mobile-sheet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        flex-shrink: 0;
+      }
+      .mobile-sheet-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: #e4e8f0;
+      }
+      .mobile-sheet-close {
+        width: 40px;
+        height: 40px;
+        min-height: 40px;
+        padding: 0;
+        border: none;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #c8d4e8;
+        font-size: 22px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .mobile-sheet-body {
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 12px 14px 16px;
+      }
+      html.is-mobile-ui #chipDock:not(.in-mobile-sheet),
+      html.is-mobile-ui #feltDock:not(.in-mobile-sheet) {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        border: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+      html.is-mobile-ui #chipDock.in-mobile-sheet,
+      html.is-mobile-ui #feltDock.in-mobile-sheet {
+        position: relative !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        clip: auto !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        overflow: visible !important;
+        left: auto !important;
+        right: auto !important;
+        top: auto !important;
+        bottom: auto !important;
+      }
+      @media (max-width: 640px) {
+        .mobile-quick-bar {
+          display: flex;
+        }
+        #ui .panel {
+          padding: 10px 12px;
+        }
+        #ui {
+          padding: 8px 12px max(10px, env(safe-area-inset-bottom));
+          gap: 6px;
+        }
+        h1 {
+          font-size: 15px;
+        }
+      }
+      #ui .panel {
+        pointer-events: auto;
+        width: min(560px, 100%);
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: rgba(12, 14, 20, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .totals {
+        font-size: 20px;
+        font-variant-numeric: tabular-nums;
+      }
+      .totals strong {
+        color: #f0d78c;
+        font-weight: 700;
+        font-size: 1.15em;
+      }
+      @media (max-width: 640px) {
+        .totals {
+          font-size: 17px;
+        }
+        .totals strong {
+          font-size: 1.12em;
+        }
+      }
+      .label-muted {
+        font-size: 12px;
+        color: #7a8a9e;
+      }
+      .d21-copyright {
+        margin: 14px 0 0;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        font-size: 11px;
+        line-height: 1.35;
+        color: #5a6a7e;
+        letter-spacing: 0.02em;
+      }
+      /* Collapsed = one line; open = breakdown + clear (saves vertical space) */
+      .lifetime-details {
+        margin: 8px 0 0;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(6, 8, 12, 0.45);
+      }
+      .lifetime-details summary {
+        list-style: none;
+        cursor: pointer;
+        font-size: 11px;
+        line-height: 1.35;
+        padding: 7px 10px;
+        color: #8a9aaf;
+        user-select: none;
+      }
+      .lifetime-details summary::-webkit-details-marker {
+        display: none;
+      }
+      .lifetime-details summary::before {
+        content: "▸ ";
+        opacity: 0.75;
+      }
+      .lifetime-details[open] summary::before {
+        content: "▾ ";
+      }
+      .lifetime-details #lifeSummary {
+        font-variant-numeric: tabular-nums;
+      }
+      .lifetime-details.is-negative #lifeSummary {
+        color: #f0b8c0;
+      }
+      .lifetime-details:not(.is-negative) #lifeSummary {
+        color: #b8e0c8;
+      }
+      .lifetime-body {
+        padding: 0 10px 8px;
+        font-size: 11px;
+        line-height: 1.45;
+        color: #7a8a9e;
+      }
+      .lifetime-body strong {
+        color: #c8d4e8;
+        font-variant-numeric: tabular-nums;
+      }
+      .ach-details #achCount {
+        font-variant-numeric: tabular-nums;
+        color: #9aa8bc;
+      }
+      .ach-body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: min(42vh, 340px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-right: 4px;
+        scrollbar-gutter: stable;
+      }
+      .ach-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 10px;
+        font-size: 11px;
+        line-height: 1.35;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .ach-row:last-child {
+        border-bottom: none;
+      }
+      .ach-name {
+        font-weight: 700;
+        min-width: 7.5rem;
+      }
+      .ach-row.locked .ach-name,
+      .ach-row.locked .ach-desc {
+        color: #4a5568;
+      }
+      .ach-row.unlocked .ach-name {
+        color: #e8d4a8;
+      }
+      .ach-row.unlocked .ach-desc {
+        color: #8a9aaf;
+      }
+      /* Table felt — fixed bottom-right (mirrors #chipDock) */
+      #feltDock {
+        position: fixed;
+        z-index: 2;
+        right: max(10px, env(safe-area-inset-right));
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        padding: 8px 10px 10px;
+        max-width: min(220px, calc(100vw - 20px));
+        border-radius: 12px;
+        background: linear-gradient(165deg, rgba(34, 38, 52, 0.96), rgba(20, 22, 32, 0.98));
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow:
+          0 12px 36px rgba(0, 0, 0, 0.55),
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 0 28px rgba(232, 200, 122, 0.08);
+      }
+      @media (min-width: 641px) {
+        #feltDock {
+          bottom: max(12px, env(safe-area-inset-bottom));
+        }
+      }
+      @media (max-width: 640px) {
+        #feltDock {
+          bottom: max(148px, calc(env(safe-area-inset-bottom) + 132px));
+        }
+      }
+      #feltDock .felt-picker {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end;
+        margin: 0;
+      }
+      #feltDock .mode-select {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 6px 8px;
+        min-height: 34px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #d4dce8;
+        background: rgba(10, 12, 18, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 8px;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b8c4d8' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        padding-right: 26px;
+      }
+      #feltDock .mode-select:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      #feltDock .mode-select:focus-visible {
+        outline: 2px solid rgba(232, 200, 122, 0.55);
+        outline-offset: 1px;
+      }
+      .felt-swatch {
+        box-sizing: border-box;
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        min-height: 24px;
+        padding: 0;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.18);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition:
+          box-shadow 0.15s ease,
+          transform 0.12s ease;
+      }
+      .felt-swatch:hover {
+        transform: scale(1.06);
+      }
+      .felt-swatch.is-selected {
+        box-shadow:
+          0 0 0 2px rgba(232, 200, 122, 0.95),
+          0 2px 8px rgba(0, 0, 0, 0.45);
+      }
+      .felt-swatch.felt-0 {
+        background: #152a1a;
+      }
+      .felt-swatch.felt-1 {
+        background: #1e1f48;
+      }
+      .felt-swatch.felt-2 {
+        background: #4a162a;
+      }
+      .felt-swatch.felt-3 {
+        background: #3d1a4d;
+      }
+      .felt-swatch.felt-4 {
+        background: #2a1450;
+      }
+      .felt-swatch.felt-5 {
+        background: linear-gradient(145deg, #143528 0%, #1e4a3d 55%, #0a1814 100%);
+      }
+      .felt-swatch.felt-6 {
+        background: linear-gradient(145deg, #4a1428 0%, #6b2038 50%, #1a0a10 100%);
+      }
+      .felt-swatch.felt-7 {
+        background: linear-gradient(145deg, #1a1a1c 0%, #2a2418 45%, #0a0a0c 100%);
+      }
+      #btnResetProgress {
+        margin-top: 6px;
+        font-size: 11px;
+        padding: 6px 10px;
+        min-height: 36px;
+        width: 100%;
+      }
+      #message {
+        font-size: 13px;
+        line-height: 1.45;
+        color: #a8b4c8;
+        margin: 0 0 10px;
+      }
+      #ruleHint {
+        font-size: 12px;
+        color: #6a7a92;
+        margin: 0 0 10px;
+        /* min-height: 2.6em; */
+      }
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      button {
+        cursor: pointer;
+        border: none;
+        border-radius: 8px;
+        padding: 11px 18px;
+        min-height: 44px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      button:disabled {
+        opacity: 0.38;
+        cursor: not-allowed;
+      }
+      .primary {
+        color: #0c0e12;
+        background: linear-gradient(165deg, #e8c87a, #c49a3c);
+      }
+      .secondary {
+        color: #d4dce8;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      .ghost {
+        color: #8a9aaf;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      /* Betting chips: above table + win overlay; must stay out from under #ui’s old full-width gradient */
+      #chipDock {
+        position: fixed;
+        z-index: 2;
+        left: max(10px, env(safe-area-inset-left));
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 8px 10px 10px;
+        max-width: 148px;
+        border-radius: 12px;
+        background: linear-gradient(165deg, rgba(34, 38, 52, 0.96), rgba(20, 22, 32, 0.98));
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow:
+          0 12px 36px rgba(0, 0, 0, 0.55),
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 0 28px rgba(232, 200, 122, 0.12);
+        transition:
+          border-color 0.25s ease,
+          box-shadow 0.25s ease;
+      }
+      /* Between rounds: remind player to place bet */
+      #chipDock.needs-bet {
+        border-color: rgba(232, 200, 122, 0.55);
+      }
+      #chipDock.needs-bet .bet-dock-label {
+        color: #f0d78c;
+        text-shadow: 0 0 14px rgba(232, 200, 122, 0.4);
+      }
+      @keyframes chipDockBetGlow {
+        0%,
+        100% {
+          box-shadow:
+            0 12px 36px rgba(0, 0, 0, 0.55),
+            0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+            0 0 34px rgba(232, 200, 122, 0.42),
+            0 0 0 2px rgba(232, 200, 122, 0.38);
+        }
+        50% {
+          box-shadow:
+            0 12px 36px rgba(0, 0, 0, 0.55),
+            0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+            0 0 52px rgba(232, 200, 122, 0.58),
+            0 0 0 3px rgba(232, 200, 122, 0.48);
+        }
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        #chipDock.needs-bet {
+          animation: chipDockBetGlow 2.4s ease-in-out infinite;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #chipDock.needs-bet {
+          box-shadow:
+            0 12px 36px rgba(0, 0, 0, 0.55),
+            0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+            0 0 40px rgba(232, 200, 122, 0.5),
+            0 0 0 2px rgba(232, 200, 122, 0.42);
+        }
+      }
+      @media (min-width: 641px) {
+        #chipDock {
+          bottom: max(12px, env(safe-area-inset-bottom));
+        }
+      }
+      @media (max-width: 640px) {
+        /* Sit above the bottom control panel so Bet / Hit aren’t covered */
+        #chipDock {
+          bottom: max(148px, calc(env(safe-area-inset-bottom) + 132px));
+        }
+      }
+      .bet-dock-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #b8c4d8;
+        margin: 0;
+      }
+      .chip-pick {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        width: 100%;
+      }
+      #btnBetDock {
+        width: 100%;
+        margin-top: 2px;
+        padding: 10px 12px;
+        min-height: 44px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      .chip-btn {
+        box-sizing: border-box;
+        width: 56px;
+        height: 56px;
+        min-width: 56px;
+        min-height: 56px;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #0c0e12;
+        border: 2px solid rgba(0, 0, 0, 0.35);
+        box-shadow:
+          0 2px 0 rgba(0, 0, 0, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: box-shadow 0.12s ease, filter 0.12s ease;
+      }
+      .chip-btn:hover:not(:disabled) {
+        filter: brightness(1.06);
+      }
+      .chip-btn:focus {
+        outline: none;
+      }
+      .chip-btn:focus-visible {
+        box-shadow:
+          0 2px 0 rgba(0, 0, 0, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.35),
+          0 0 0 2px rgba(232, 200, 122, 0.55);
+      }
+      /* Inset ring only — outer diameter stays 56px (no outline-offset jump) */
+      .chip-btn.is-selected {
+        box-shadow:
+          0 2px 0 rgba(0, 0, 0, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.35),
+          inset 0 0 0 2px rgba(232, 200, 122, 0.95);
+      }
+      .chip-btn.chip-d1 {
+        background: linear-gradient(165deg, #f8f8f8, #d8d8d8);
+        color: #1a1a1a;
+      }
+      .chip-btn.chip-d5 {
+        background: linear-gradient(165deg, #e04555, #9a1830);
+        color: #fff;
+      }
+      .chip-btn.chip-d25 {
+        background: linear-gradient(165deg, #2ea06a, #136542);
+        color: #fff;
+      }
+      .chip-btn.chip-d100 {
+        background: linear-gradient(165deg, #3a3a48, #121218);
+        color: #e8e8f0;
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+      #betHud {
+        font-size: 10px;
+        line-height: 1.35;
+        color: #c8d0e0;
+        margin: 0;
+        width: 100%;
+      }
+      #d21StakeHint {
+        font-size: 9px;
+        line-height: 1.35;
+        color: rgba(180, 195, 215, 0.88);
+        margin: 4px 0 0;
+        width: 100%;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      /* Title + toggle on one row; body only when open (no empty strip when closed) */
+      .panel-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0 0 6px;
+      }
+      .panel-title-row h1 {
+        margin: 0;
+        flex: 1;
+        min-width: 0;
+        line-height: 1.2;
+      }
+      #panelHelpToggle {
+        flex-shrink: 0;
+        width: 28px;
+        height: 26px;
+        min-height: 26px;
+        padding: 0;
+        font-size: 17px;
+        font-weight: 300;
+        line-height: 1;
+        color: #b8c4d8;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(14, 16, 22, 0.95);
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+        cursor: pointer;
+      }
+      #panelHelpToggle:hover {
+        filter: brightness(1.08);
+      }
+      #panelHelpBody {
+        margin: 0 0 10px;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(6, 8, 12, 0.35);
+      }
+      #panelHelpBody[hidden] {
+        display: none !important;
+      }
+      #panelHelpBody #ruleHint {
+        line-height: 1.45;
+      }
+      #panelHelpBody #message {
+        margin: 0;
+        padding: 0;
+      }
+      /* Multiplayer: corner trigger + popover — above full-screen canvas (see canvas pointer-events) */
+      #d21mpWrap {
+        position: fixed;
+        z-index: 10000;
+        top: max(10px, env(safe-area-inset-top));
+        right: max(10px, env(safe-area-inset-right));
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 8px;
+        pointer-events: auto;
+        max-width: min(340px, calc(100vw - 20px));
+      }
+      .d21-mp-col {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0;
+        min-width: 0;
+      }
+      .d21-cam-zoom {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 6px;
+        border-radius: 999px;
+        background: rgba(14, 16, 24, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+        flex-shrink: 0;
+      }
+      .d21-cam-zoom-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        width: 32px;
+        min-width: 32px;
+        max-width: 32px;
+        height: 32px;
+        min-height: 32px;
+        max-height: 32px;
+        aspect-ratio: 1;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.08);
+        color: #e4e8f0;
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .d21-cam-zoom-btn svg {
+        display: block;
+        flex-shrink: 0;
+      }
+      .d21-cam-zoom-btn:hover {
+        background: rgba(255, 255, 255, 0.14);
+      }
+      .d21-cam-zoom-btn:focus-visible {
+        outline: 2px solid rgba(232, 200, 122, 0.55);
+        outline-offset: 2px;
+      }
+      #d21mpTrigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        max-width: min(220px, 46vw);
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #e4e8f0;
+        background: rgba(14, 16, 24, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #d21mpTrigger:hover {
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+      #d21mpTrigger:focus-visible {
+        outline: 2px solid rgba(232, 200, 122, 0.55);
+        outline-offset: 2px;
+      }
+      .d21mp-trigger-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: #5a6578;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+      }
+      #d21mpTrigger.is-live .d21mp-trigger-dot {
+        background: #5cbf7a;
+        box-shadow: 0 0 10px rgba(80, 200, 120, 0.45);
+      }
+      #d21mpTrigger.is-warn .d21mp-trigger-dot {
+        background: #c9a86a;
+        box-shadow: 0 0 8px rgba(200, 160, 100, 0.35);
+      }
+      #d21mpTriggerLabel {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+      }
+      #d21mpPopover[hidden] {
+        display: none !important;
+      }
+      #d21mpPopover {
+        margin-top: 8px;
+        width: min(300px, calc(100vw - 20px));
+        max-height: min(72vh, 520px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 12px;
+        background: rgba(12, 14, 20, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow:
+          0 16px 48px rgba(0, 0, 0, 0.55),
+          0 0 0 1px rgba(0, 0, 0, 0.25) inset;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+      }
+      #d21mpPanel {
+        padding: 12px 14px 14px;
+        pointer-events: auto;
+      }
+      #d21mpPanel h2 {
+        margin: 0 0 6px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: #c8d4e8;
+      }
+      #d21mpPanel .mp-note {
+        font-size: 11px;
+        color: #5a6a82;
+        line-height: 1.4;
+        margin: 0 0 8px;
+      }
+      #d21mpPanel .mp-note code {
+        font-size: 10px;
+        color: #7a8aa8;
+      }
+      #d21mpStatus {
+        font-size: 12px;
+        color: #8a9aac;
+        margin-bottom: 8px;
+      }
+      #d21mpStatus.mp-ok {
+        color: #7ab88a;
+      }
+      #d21mpStatus.mp-warn {
+        color: #c9a86a;
+      }
+      .d21-mp-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .d21-mp-join {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 8px;
+      }
+      #d21mpJoinInput {
+        width: 5.5rem;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.25);
+        color: #e8eef8;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      #d21mpRoomLine {
+        font-size: 12px;
+        color: #7a8a9e;
+        margin-bottom: 6px;
+      }
+      #d21mpRoomLine strong {
+        color: #c4a86a;
+        font-variant-numeric: tabular-nums;
+      }
+      #d21mpSpectate {
+        font-size: 11px;
+        color: #5a6a82;
+        margin: 0 0 6px;
+      }
+      /* Win/lose/push — above canvas only; chips (2) and panel (3) stack above this */
+      #roundOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px max(24px, env(safe-area-inset-right)) max(120px, env(safe-area-inset-bottom))
+          max(24px, env(safe-area-inset-left));
+        pointer-events: none;
+        background: radial-gradient(ellipse 85% 65% at 50% 42%, rgba(6, 8, 14, 0.72) 0%, rgba(6, 8, 14, 0.35) 55%, transparent 85%);
+      }
+      #roundOverlay.is-visible {
+        display: flex;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        #roundOverlay.is-visible .round-overlay-inner {
+          animation: roundOverlayPop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+      }
+      @keyframes roundOverlayPop {
+        from {
+          opacity: 0;
+          transform: scale(0.92);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .round-overlay-inner {
+        text-align: center;
+        max-width: min(92vw, 28rem);
+      }
+      #roundOverlayTitle {
+        margin: 0;
+        font-size: clamp(2rem, 8vw, 3.25rem);
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        line-height: 1.1;
+        text-transform: uppercase;
+        text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55), 0 0 2px rgba(0, 0, 0, 0.8);
+      }
+      #roundOverlay.is-win #roundOverlayTitle {
+        color: #e8f5c8;
+        text-shadow:
+          0 0 40px rgba(120, 200, 90, 0.45),
+          0 2px 24px rgba(0, 0, 0, 0.55);
+      }
+      #roundOverlay.is-lose #roundOverlayTitle {
+        color: #f0c4c8;
+        text-shadow:
+          0 0 36px rgba(200, 80, 90, 0.4),
+          0 2px 24px rgba(0, 0, 0, 0.55);
+      }
+      #roundOverlay.is-push #roundOverlayTitle {
+        color: #d4dce8;
+        text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55);
+      }
+      #roundOverlaySub {
+        margin: 14px 0 0;
+        font-size: clamp(0.9rem, 3.2vw, 1.05rem);
+        line-height: 1.45;
+        color: rgba(228, 232, 240, 0.88);
+        font-weight: 500;
+        text-shadow: 0 1px 12px rgba(0, 0, 0, 0.65);
+      }
+      #roundOverlaySub:empty {
+        display: none;
+      }
+      /* Dice shake — above table UI (z-index 3), below double dialog (5); touch/Space hold to shake */
+      #d21ShakeOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 4;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+          max(120px, calc(env(safe-area-inset-bottom) + 96px)) max(20px, env(safe-area-inset-left));
+        pointer-events: none;
+        background: radial-gradient(ellipse 95% 55% at 50% 78%, rgba(6, 8, 14, 0.55) 0%, rgba(6, 8, 14, 0.22) 50%, transparent 78%);
+        transition: opacity 0.2s ease;
+      }
+      #d21ShakeOverlay[hidden] {
+        display: none !important;
+      }
+      #d21ShakeOverlay:not([hidden]) {
+        pointer-events: auto;
+      }
+      .d21-shake-overlay-inner {
+        position: relative;
+        width: min(92vw, 26rem);
+        padding: 14px 18px 16px;
+        border-radius: 14px;
+        text-align: center;
+        background: linear-gradient(165deg, rgba(28, 32, 48, 0.94), rgba(14, 16, 24, 0.97));
+        border: 1px solid rgba(232, 200, 122, 0.38);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 12px 40px rgba(0, 0, 0, 0.5),
+          0 0 32px rgba(232, 200, 122, 0.12);
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .d21-shake-overlay-title {
+        margin: 0 0 6px;
+        font-size: clamp(0.72rem, 2.6vw, 0.82rem);
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #f0d78c;
+        text-shadow: 0 0 18px rgba(232, 200, 122, 0.3);
+      }
+      .d21-shake-overlay-sub {
+        margin: 0;
+        font-size: clamp(0.8rem, 2.8vw, 0.92rem);
+        line-height: 1.45;
+        color: rgba(200, 210, 228, 0.92);
+        font-weight: 500;
+      }
+      .d21-shake-overlay-kbd {
+        display: inline-block;
+        margin: 0 3px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.78em;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: #e8ecf4;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .d21-shake-overlay-dismiss {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        z-index: 2;
+        width: 32px;
+        height: 32px;
+        margin: 0;
+        padding: 0;
+        border: none;
+        border-radius: 8px;
+        font-size: 22px;
+        line-height: 1;
+        color: rgba(200, 210, 228, 0.85);
+        background: rgba(255, 255, 255, 0.06);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .d21-shake-overlay-dismiss:hover {
+        color: #e4e8f0;
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .d21-shake-overlay-dismiss:focus-visible {
+        outline: 2px solid rgba(232, 200, 122, 0.55);
+        outline-offset: 2px;
+      }
+      .d21-dock-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+        max-width: 100%;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #8a9aaf;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .d21-dock-toggle-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+        opacity: 0;
+      }
+      .d21-dock-toggle-switch {
+        position: relative;
+        flex-shrink: 0;
+        width: 28px;
+        height: 16px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+        transition:
+          background 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+      .d21-dock-toggle-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: linear-gradient(165deg, #e8ecf4, #b8c0d0);
+        box-shadow:
+          0 1px 2px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+        transition: transform 0.18s ease;
+      }
+      .d21-dock-toggle-input:checked + .d21-dock-toggle-switch {
+        background: rgba(201, 168, 106, 0.42);
+        box-shadow:
+          0 0 0 1px rgba(232, 200, 122, 0.35) inset,
+          0 0 12px rgba(232, 200, 122, 0.12);
+      }
+      .d21-dock-toggle-input:checked + .d21-dock-toggle-switch .d21-dock-toggle-knob {
+        transform: translateX(12px);
+        background: linear-gradient(165deg, #fff8e8, #e8c87a);
+      }
+      .d21-dock-toggle-input:focus-visible + .d21-dock-toggle-switch {
+        outline: 2px solid rgba(232, 200, 122, 0.55);
+        outline-offset: 2px;
+      }
+      .d21-dock-toggle-text {
+        flex: 1;
+        min-width: 0;
+        line-height: 1.25;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .d21-dock-toggle-switch,
+        .d21-dock-toggle-knob {
+          transition: none;
+        }
+        #d21ShakeOverlay {
+          transition: none;
+        }
+      }
+      /* Double-or-nothing — above round overlay, below bottom UI */
+      #doubleOffer {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px max(24px, env(safe-area-inset-right)) max(120px, env(safe-area-inset-bottom))
+          max(24px, env(safe-area-inset-left));
+        pointer-events: none;
+        background: radial-gradient(ellipse 80% 60% at 50% 45%, rgba(6, 8, 14, 0.78) 0%, rgba(6, 8, 14, 0.4) 55%, transparent 88%);
+      }
+      #doubleOffer.is-visible {
+        display: flex;
+      }
+      .double-offer-inner {
+        pointer-events: auto;
+        width: min(92vw, 22rem);
+        padding: 16px 16px 14px;
+        border-radius: 14px;
+        text-align: center;
+        background: linear-gradient(165deg, rgba(28, 32, 48, 0.97), rgba(14, 16, 24, 0.99));
+        border: 1px solid rgba(232, 200, 122, 0.42);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 16px 48px rgba(0, 0, 0, 0.6),
+          0 0 40px rgba(232, 200, 122, 0.15);
+      }
+      .double-title {
+        margin: 0;
+        font-size: clamp(1.1rem, 4vw, 1.35rem);
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #f0d78c;
+        text-shadow: 0 0 20px rgba(232, 200, 122, 0.35);
+      }
+      .double-sub {
+        margin: 10px 0 14px;
+        font-size: clamp(0.85rem, 3vw, 0.95rem);
+        line-height: 1.45;
+        color: #a8b4c8;
+      }
+      .double-btns {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+      }
+      .double-btns button {
+        min-height: 42px;
+        padding: 9px 14px;
+        font-size: 13px;
+      }
+      /* Arcade-style “power up” toast — above round overlay + double dialog (see #doubleOffer z-index) */
+      #powerUp {
+        position: fixed;
+        left: 50%;
+        top: min(22%, max(64px, env(safe-area-inset-top)));
+        transform: translateX(-50%) scale(0.94);
+        z-index: 10050;
+        width: min(92vw, 22rem);
+        pointer-events: none;
+        text-align: center;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.2s ease,
+          transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+          visibility 0.2s;
+      }
+      #powerUp.is-visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) scale(1);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #powerUp {
+          transition: opacity 0.15s ease, visibility 0.15s;
+        }
+        #powerUp.is-visible {
+          transform: translateX(-50%);
+        }
+      }
+      .power-up-inner {
+        padding: 12px 16px 14px;
+        border-radius: 14px;
+        background: linear-gradient(165deg, rgba(28, 32, 48, 0.94), rgba(14, 16, 24, 0.97));
+        border: 1px solid rgba(232, 200, 122, 0.45);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 12px 40px rgba(0, 0, 0, 0.55),
+          0 0 36px rgba(232, 200, 122, 0.18);
+      }
+      #powerUp.is-warn .power-up-inner {
+        border-color: rgba(200, 120, 130, 0.5);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 12px 40px rgba(0, 0, 0, 0.55),
+          0 0 32px rgba(200, 90, 100, 0.2);
+      }
+      #powerUpTitle {
+        margin: 0;
+        font-size: clamp(1.15rem, 4.2vw, 1.45rem);
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #f0d78c;
+        text-shadow: 0 0 24px rgba(232, 200, 122, 0.35), 0 2px 12px rgba(0, 0, 0, 0.6);
+      }
+      #powerUp.is-warn #powerUpTitle {
+        color: #f0b8b8;
+        text-shadow: 0 0 20px rgba(200, 100, 110, 0.35), 0 2px 12px rgba(0, 0, 0, 0.6);
+      }
+      #powerUpSub {
+        margin: 6px 0 0;
+        font-size: clamp(0.8rem, 2.8vw, 0.95rem);
+        line-height: 1.4;
+        color: rgba(200, 210, 228, 0.92);
+        font-weight: 500;
+      }
+      /* Stake tier unlock — full-screen moment above power-up toast */
+      #d21StakesUp {
+        position: fixed;
+        inset: 0;
+        z-index: 10060;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+          max(100px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+          visibility 0.4s;
+      }
+      #d21StakesUp.is-visible {
+        pointer-events: auto;
+        opacity: 1;
+        visibility: visible;
+      }
+      #d21StakesUpBackdrop {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: radial-gradient(ellipse 90% 80% at 50% 38%, rgba(8, 10, 18, 0.88) 0%, rgba(4, 6, 12, 0.55) 52%, rgba(4, 6, 12, 0.35) 100%);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        cursor: pointer;
+      }
+      .d21-stakes-up-modal {
+        position: relative;
+        z-index: 1;
+        width: min(92vw, 24rem);
+        padding: 28px 22px 22px;
+        border-radius: 20px;
+        text-align: center;
+        background: linear-gradient(155deg, rgba(32, 36, 54, 0.98) 0%, rgba(14, 16, 26, 0.99) 48%, rgba(18, 20, 32, 0.98) 100%);
+        border: 1px solid rgba(232, 200, 122, 0.55);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.4) inset,
+          0 24px 64px rgba(0, 0, 0, 0.65),
+          0 0 80px rgba(232, 200, 122, 0.22),
+          0 0 120px rgba(90, 140, 220, 0.08);
+        transform: scale(0.94) translateY(16px);
+        opacity: 0;
+        transition:
+          transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.45s ease;
+      }
+      #d21StakesUp.is-visible .d21-stakes-up-modal {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+      .d21-stakes-up-chips {
+        position: relative;
+        height: 72px;
+        margin: 0 auto 16px;
+        width: 120px;
+      }
+      .d21-stakes-up-chip {
+        position: absolute;
+        left: 50%;
+        width: 88px;
+        height: 88px;
+        margin-left: -44px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.22);
+        box-shadow:
+          0 8px 24px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+          0 0 40px rgba(232, 200, 122, 0.15);
+      }
+      .d21-stakes-up-chip--1 {
+        bottom: 0;
+        z-index: 3;
+        background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.35) 0%, transparent 42%),
+          linear-gradient(145deg, #c9a86a 0%, #8b6914 45%, #5a4208 100%);
+        transform: rotate(-8deg);
+        animation: d21ChipFloat1 2.8s ease-in-out infinite;
+      }
+      .d21-stakes-up-chip--2 {
+        bottom: 14px;
+        z-index: 2;
+        width: 84px;
+        height: 84px;
+        margin-left: -42px;
+        background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.28) 0%, transparent 42%),
+          linear-gradient(145deg, #a8b4c8 0%, #4a5568 50%, #2a3040 100%);
+        transform: rotate(6deg);
+        animation: d21ChipFloat2 2.8s ease-in-out infinite 0.15s;
+      }
+      .d21-stakes-up-chip--3 {
+        bottom: 28px;
+        z-index: 1;
+        width: 80px;
+        height: 80px;
+        margin-left: -40px;
+        background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.22) 0%, transparent 42%),
+          linear-gradient(145deg, #d4a84b 0%, #a07018 50%, #6b4808 100%);
+        transform: rotate(-4deg);
+        animation: d21ChipFloat3 2.8s ease-in-out infinite 0.3s;
+      }
+      @keyframes d21ChipFloat1 {
+        0%,
+        100% {
+          transform: rotate(-8deg) translateY(0);
+        }
+        50% {
+          transform: rotate(-8deg) translateY(-4px);
+        }
+      }
+      @keyframes d21ChipFloat2 {
+        0%,
+        100% {
+          transform: rotate(6deg) translateY(0);
+        }
+        50% {
+          transform: rotate(6deg) translateY(-3px);
+        }
+      }
+      @keyframes d21ChipFloat3 {
+        0%,
+        100% {
+          transform: rotate(-4deg) translateY(0);
+        }
+        50% {
+          transform: rotate(-4deg) translateY(-2px);
+        }
+      }
+      .d21-stakes-up-kicker {
+        margin: 0 0 6px;
+        font-size: clamp(0.68rem, 2.4vw, 0.78rem);
+        font-weight: 800;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: #c9a86a;
+        text-shadow: 0 0 24px rgba(232, 200, 122, 0.35);
+      }
+      .d21-stakes-up-amount {
+        margin: 0 0 12px;
+        font-size: clamp(2.75rem, 12vw, 3.75rem);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        background: linear-gradient(180deg, #fff8e8 0%, #f0d78c 38%, #c9a86a 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 4px 24px rgba(232, 200, 122, 0.45));
+      }
+      .d21-stakes-up-detail {
+        margin: 0 0 20px;
+        font-size: clamp(0.82rem, 2.8vw, 0.95rem);
+        line-height: 1.5;
+        color: rgba(200, 210, 228, 0.92);
+        font-weight: 500;
+      }
+      .d21-stakes-up-btn {
+        min-height: 44px;
+        padding: 10px 28px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border-radius: 12px;
+        border: 1px solid rgba(232, 200, 122, 0.5);
+        color: #1a1c24;
+        cursor: pointer;
+        background: linear-gradient(180deg, #f0d78c 0%, #c9a86a 100%);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4), 0 0 32px rgba(232, 200, 122, 0.2);
+        -webkit-tap-highlight-color: transparent;
+      }
+      .d21-stakes-up-btn:hover {
+        filter: brightness(1.06);
+      }
+      .d21-stakes-up-btn:focus-visible {
+        outline: 2px solid rgba(232, 200, 122, 0.75);
+        outline-offset: 3px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #d21StakesUp {
+          transition: opacity 0.2s ease, visibility 0.2s;
+        }
+        .d21-stakes-up-modal {
+          transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .d21-stakes-up-chip--1,
+        .d21-stakes-up-chip--2,
+        .d21-stakes-up-chip--3 {
+          animation: none;
+        }
+      }
+      /* `hidden` must win: a bare `display: flex` overrides the attribute without this rule */
+      #fileGate[hidden] {
+        display: none !important;
+      }
+      #fileGate:not([hidden]) {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: #0a0c12;
+        color: #e4e8f0;
+        line-height: 1.55;
+      }
+      #fileGate .inner {
+        max-width: 28rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(18, 18, 26, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      #fileGate code {
+        font-size: 0.9em;
+        background: #0a0c12;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      #fileGate pre {
+        margin: 0.75rem 0;
+        padding: 12px 14px;
+        background: #0a0c12;
+        border-radius: 8px;
+        overflow: auto;
+        font-size: 13px;
+      }
+      #fileGate a {
+        color: #c9a86a;
+      }
+    </style>
+    <script src="/dice-21/assets/dice21-badge-showcase.js"></script>
+    <script type="module" crossorigin src="/dice-21/assets/dice21-DU7nhPGz.js"></script>
+    <link rel="modulepreload" crossorigin href="/dice-21/assets/modulepreload-polyfill-B5Qt9EMX.js">
+    <script type="module" crossorigin src="/dice-21/assets/modulepreload-polyfill-B5Qt9EMX.js"></script>
+  </head>
+  <body>
+    <div id="fileGate" hidden>
+      <div class="inner">
+        <h1 style="margin: 0 0 14px; font-size: 1.25rem">Dice 21 needs a local server</h1>
+        <p style="margin: 0 0 14px; color: #a8b4c8">
+          Browsers block <code>file://</code> from loading ES modules (the game scripts). Run the dev server,
+          then open the app over HTTP.
+        </p>
+        <p style="margin: 0 0 8px"><strong>From the repo folder</strong> (where <code>package.json</code> is):</p>
+        <pre>npm run dev</pre>
+        <p style="margin: 0 0 14px; color: #a8b4c8">
+          Then visit <a href="http://localhost:5173/">http://localhost:5173/</a> (Dice 21) or
+          <a href="http://localhost:5173/dice-21/">/dice-21/</a>
+        </p>
+        <p style="margin: 0; color: #6a7a92; font-size: 12px">
+          After a production build: <code>npm run preview</code> and use the same path.
+        </p>
+      </div>
+    </div>
+    <div id="app">
+      <div class="d21-badge-showcase" id="d21BadgeShowcase" aria-label="Earned badges">
+        <div class="d21-badge-showcase-inner">
+          <p class="d21-badge-showcase-title">Badges</p>
+          <div class="d21-badge-grid" id="d21BadgeGrid"></div>
+        </div>
+      </div>
+    <div id="d21mpWrap">
+      <div class="d21-cam-zoom" id="d21CamZoomGroup" aria-label="Camera zoom">
+        <button type="button" class="d21-cam-zoom-btn" id="d21CamZoomOut" title="Zoom out" aria-label="Zoom out">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm-2.5-4h5v1h-5v-1z"
+            />
+          </svg>
+        </button>
+        <button type="button" class="d21-cam-zoom-btn" id="d21CamZoomIn" title="Zoom in" aria-label="Zoom in">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h1v2h2v1h-2v2h-1v-2h-2v-1h2V10z"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="d21-mp-col">
+        <button
+          type="button"
+          id="d21mpTrigger"
+          aria-expanded="false"
+          aria-controls="d21mpPopover"
+          title="Online multiplayer"
+        >
+          <span class="d21mp-trigger-dot" aria-hidden="true"></span>
+          <span id="d21mpTriggerLabel">Multiplayer</span>
+        </button>
+        <div id="d21mpPopover" role="dialog" aria-label="Online multiplayer" aria-hidden="true" hidden>
+          <div id="d21mpPanel">
+            <h2>Online (2 players)</h2>
+            <p class="mp-note">
+              Host creates a room and shares the code; the other player joins. Guest sees the same numbers (host plays).
+              Same server as Poker Dice: <code>npm run mp-server</code> · port <code>8788</code>.
+            </p>
+            <div id="d21mpStatus">Offline — solo play</div>
+            <div class="d21-mp-row">
+              <button type="button" class="ghost" id="d21mpCreateBtn">Create room</button>
+              <div class="d21-mp-join">
+                <input id="d21mpJoinInput" type="text" maxlength="4" autocomplete="off" placeholder="CODE" title="Room code" />
+                <button type="button" class="ghost" id="d21mpJoinBtn">Join</button>
+              </div>
+            </div>
+            <div id="d21mpRoomLine" hidden>Room <strong id="d21mpCode"></strong></div>
+            <p id="d21mpSpectate" hidden>Spectating — HUD syncs from host; 3D view may lag.</p>
+            <div class="d21-mp-row">
+              <button type="button" class="ghost" id="d21mpReconnectBtn" hidden>Resume session</button>
+              <button type="button" class="ghost" id="d21mpDisconnectBtn" hidden>Disconnect</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      id="roundOverlay"
+      class="round-overlay"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-hidden="true"
+    >
+      <div class="round-overlay-inner">
+        <p id="roundOverlayTitle"></p>
+        <p id="roundOverlaySub"></p>
+      </div>
+    </div>
+    <div
+      id="d21ShakeOverlay"
+      class="d21-shake-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-live="polite"
+      aria-labelledby="d21ShakeOverlayTitle"
+      hidden
+      aria-hidden="true"
+    >
+      <div class="d21-shake-overlay-inner">
+        <button
+          type="button"
+          class="d21-shake-overlay-dismiss"
+          id="d21ShakeOverlayDismiss"
+          aria-label="Close shake hint (turn back on under Table)"
+        >
+          ×
+        </button>
+        <p id="d21ShakeOverlayTitle" class="d21-shake-overlay-title">Shake the dice</p>
+        <p class="d21-shake-overlay-sub">
+          Hold <span class="d21-shake-overlay-kbd">Space</span> or
+          <span class="d21-shake-overlay-kbd">Enter</span>, or press &amp; hold this card—the dice only shake
+          while you hold. Release to roll (or hold until the max shake time). If you never hold, the roll starts
+          shortly on its own. This hint stays up while the dice roll so you know it’s optional next time.
+        </p>
+      </div>
+    </div>
+    <div
+      id="doubleOffer"
+      class="double-offer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="doubleTitle"
+      aria-hidden="true"
+    >
+      <div class="double-offer-inner">
+        <p id="doubleTitle" class="double-title">Double or nothing?</p>
+        <p id="doubleSub" class="double-sub"></p>
+        <div class="double-btns">
+          <button type="button" class="secondary" id="btnDoubleCollect">Take win</button>
+          <button type="button" class="primary" id="btnDoubleRisk">Roll for double</button>
+        </div>
+      </div>
+    </div>
+    <div id="powerUp" class="power-up" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+      <div class="power-up-inner">
+        <p id="powerUpTitle"></p>
+        <p id="powerUpSub"></p>
+      </div>
+    </div>
+    <div id="d21StakesUp" class="d21-stakes-up" aria-hidden="true">
+      <div id="d21StakesUpBackdrop" aria-hidden="true"></div>
+      <div
+        class="d21-stakes-up-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="d21StakesUpHeading"
+      >
+        <div class="d21-stakes-up-chips" aria-hidden="true">
+          <span class="d21-stakes-up-chip d21-stakes-up-chip--3"></span>
+          <span class="d21-stakes-up-chip d21-stakes-up-chip--2"></span>
+          <span class="d21-stakes-up-chip d21-stakes-up-chip--1"></span>
+        </div>
+        <p id="d21StakesUpHeading" class="d21-stakes-up-kicker">New table unlocked</p>
+        <p class="d21-stakes-up-amount" id="d21StakesUpAmt">$5</p>
+        <p class="d21-stakes-up-detail" id="d21StakesUpDetail"></p>
+        <button type="button" class="d21-stakes-up-btn" id="d21StakesUpDismiss">Continue</button>
+      </div>
+    </div>
+    <div id="chipDock" class="bet-dock">
+      <p class="bet-dock-label">Bet</p>
+      <div
+        class="chip-pick"
+        role="group"
+        aria-label="Bet size in dollars"
+      >
+        <button type="button" class="chip-btn chip-d1" data-denom="1" aria-pressed="true">$1</button>
+        <button type="button" class="chip-btn chip-d5" data-denom="5" aria-pressed="false">$5</button>
+        <button type="button" class="chip-btn chip-d25" data-denom="25" aria-pressed="false">$25</button>
+        <button type="button" class="chip-btn chip-d100" data-denom="100" aria-pressed="false">$100</button>
+      </div>
+      <button
+        type="button"
+        class="primary"
+        id="btnBetDock"
+        aria-label="Place bet — match the house and roll"
+      >
+        Bet
+      </button>
+      <p id="betHud" class="label-muted">Bet $1 · next pot $2</p>
+      <p id="d21StakeHint" class="label-muted" aria-live="polite"></p>
+    </div>
+    <div id="feltDock">
+      <!-- Felt swatches hidden: table felt follows stake tier (see d21ApplyTableTheme). -->
+      <div class="felt-picker-section" hidden>
+        <p class="bet-dock-label">Felt</p>
+        <div class="felt-picker" role="group" aria-label="Table felt">
+          <button type="button" class="felt-swatch felt-0 is-selected" data-felt="0" title="Emerald" aria-label="Emerald felt"></button>
+          <button type="button" class="felt-swatch felt-1" data-felt="1" title="Midnight" aria-label="Midnight felt"></button>
+          <button type="button" class="felt-swatch felt-2" data-felt="2" title="Burgundy" aria-label="Burgundy felt"></button>
+          <button type="button" class="felt-swatch felt-3" data-felt="3" title="Plum" aria-label="Plum felt"></button>
+          <button type="button" class="felt-swatch felt-4" data-felt="4" title="Royal" aria-label="Royal felt"></button>
+          <button type="button" class="felt-swatch felt-5" data-felt="5" title="$5 Club" aria-label="$5 Club felt"></button>
+          <button type="button" class="felt-swatch felt-6" data-felt="6" title="$25 Premium" aria-label="$25 Premium felt"></button>
+          <button type="button" class="felt-swatch felt-7" data-felt="7" title="$100 Elite" aria-label="$100 Elite felt"></button>
+        </div>
+      </div>
+      <label class="bet-dock-label" for="gameMode">Mode</label>
+      <select id="gameMode" class="mode-select" aria-label="Game mode">
+        <option value="classic">Classic — dealer &lt;17</option>
+        <option value="sharp">Sharp — dealer to 18</option>
+        <option value="chill">Chill — stand on 16</option>
+        <option value="fortune">Fortune — 21 pays extra</option>
+      </select>
+      <label class="d21-dock-toggle" title="Show Space / Enter shake instructions when rolling">
+        <input type="checkbox" id="d21ShakeHintPref" class="d21-dock-toggle-input" />
+        <span class="d21-dock-toggle-switch" aria-hidden="true"><span class="d21-dock-toggle-knob"></span></span>
+        <span class="d21-dock-toggle-text">Shake hint</span>
+      </label>
+      <label class="d21-dock-toggle" title="Loop casino room bed (19130) under the DJ playlist">
+        <input type="checkbox" id="d21RoomAmbPref" class="d21-dock-toggle-input" checked />
+        <span class="d21-dock-toggle-switch" aria-hidden="true"><span class="d21-dock-toggle-knob"></span></span>
+        <span class="d21-dock-toggle-text">Room ambience</span>
+      </label>
+      <label class="d21-dock-toggle" title="Random tracks from /audio/dj/*.wav (see manifest.json; run npm run dj:manifest after adding files)">
+        <input type="checkbox" id="d21AmbDjPref" class="d21-dock-toggle-input" checked />
+        <span class="d21-dock-toggle-switch" aria-hidden="true"><span class="d21-dock-toggle-knob"></span></span>
+        <span class="d21-dock-toggle-text">Ambience DJ</span>
+      </label>
+    </div>
+    <div
+      id="mobileSheetBackdrop"
+      class="mobile-sheet-backdrop"
+      hidden
+      aria-hidden="true"
+    ></div>
+    <div
+      id="mobileSheet"
+      class="mobile-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobileSheetTitle"
+      aria-hidden="true"
+      hidden
+    >
+      <div class="mobile-sheet-head">
+        <h2 id="mobileSheetTitle" class="mobile-sheet-title">Bet</h2>
+        <button type="button" id="mobileSheetClose" class="mobile-sheet-close" aria-label="Close sheet">
+          ×
+        </button>
+      </div>
+      <div id="mobileSheetBody" class="mobile-sheet-body"></div>
+    </div>
+    <div id="ui">
+      <nav id="mobileQuickBar" class="mobile-quick-bar" aria-label="Quick controls">
+        <button type="button" class="mqa-btn" id="mqaBet">Bet</button>
+        <button type="button" class="mqa-btn" id="mqaTable">Table</button>
+        <button type="button" class="mqa-btn" id="mqaOnline">Online</button>
+        <button type="button" class="mqa-btn" id="mqaMore">More</button>
+      </nav>
+      <div class="panel">
+        <div class="panel-title-row">
+          <h1>Dice 21</h1>
+          <button
+            type="button"
+            id="panelHelpToggle"
+            aria-expanded="true"
+            aria-controls="panelHelpBody"
+            title="Show or hide rules and messages"
+          >
+            −
+          </button>
+        </div>
+        <div id="panelHelpBody" class="panel-help-body">
+          <p id="ruleHint">
+            Closest to 21 without busting · under 14 your next hit is two dice; at 14+ your next hit is one die · vs
+            house · choose your bet
+          </p>
+          <p id="message"></p>
+        </div>
+        <div class="row totals">
+          <span>You <strong id="playerTotal">—</strong></span>
+          <span>Pot <strong id="potVal">0</strong></span>
+          <span>House <strong id="aiTotal">—</strong></span>
+        </div>
+        <p class="label-muted" style="margin: 8px 0 0">
+          Bankroll ($) — you <strong id="chipsYou">100</strong> · house <strong id="chipsAi">100</strong>
+        </p>
+        <details class="lifetime-details" id="lifeDetails">
+          <summary><span class="label-muted">Lifetime</span> <span id="lifeSummary">net +0 · 0 hands</span></summary>
+          <div class="lifetime-body">
+            Net <strong id="lifeNet">0</strong> · won <strong id="lifeWon">0</strong> · lost <strong id="lifeLost">0</strong> · hands
+            <strong id="lifeHands">0</strong>
+            <button type="button" class="ghost" id="btnResetProgress">Reset all progress</button>
+          </div>
+        </details>
+        <details class="lifetime-details ach-details" id="achDetails">
+          <summary><span class="label-muted">Badges</span> <span id="achCount">0/6</span></summary>
+          <div class="lifetime-body ach-body" id="achList"></div>
+        </details>
+        <div class="btn-row" style="margin-top: 12px">
+          <button type="button" class="primary" id="btnDeal" aria-label="Place bet — match the house and roll">Bet</button>
+          <button type="button" class="secondary" id="btnHit" disabled>Hit</button>
+          <button type="button" class="secondary" id="btnStand" disabled>Stand</button>
+        </div>
+        <p class="d21-copyright">
+          Dice 21 · © <span class="copyright-year"></span> Whittfield Holmes · All rights reserved
+        </p>
+      </div>
+    </div>
+    </div>
+    <script type="module" src="/dice-21/assets/dice21-mp.js"></script>
+    <script src="/dice-21/assets/dice21-mobile-ui.js" defer></script>
+    <script>
+      for (const el of document.querySelectorAll('.copyright-year')) {
+        el.textContent = String(new Date().getFullYear())
+      }
+    </script>
+  </body>
+</html>

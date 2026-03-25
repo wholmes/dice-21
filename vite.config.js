@@ -15,6 +15,9 @@ const root = fileURLToPath(new URL('.', import.meta.url))
  *
  * GitHub Pages project URL is `https://<user>.github.io/<repo>/`, so production
  * builds must use base `/dice-21/` or scripts load from the site root and 404.
+ *
+ * Production build output goes to `docs/` so you can enable Pages: Deploy from
+ * branch main → /docs without Actions artifact deploy (commit `docs/` after build).
  */
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/dice-21/' : '/',
@@ -22,6 +25,7 @@ export default defineConfig(({ command }) => ({
   publicDir: 'public',
   appType: 'mpa',
   build: {
+    outDir: 'docs',
     rollupOptions: {
       input: {
         home: resolve(root, 'index.html'),

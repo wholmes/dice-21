@@ -213,6 +213,8 @@ npm run dev
 
 Vite prints the URL (often `http://localhost:5173/`; the port changes if that one is busy). Open **`/`** or **`/dice-21/`** for Dice 21, **`/poker-dice/`** for Poker Dice.
 
+**Dev vs production URL base:** `npm run dev` uses **`base: '/'`** so the app works at `localhost:5173/dice-21/` without extra config. `npm run build` sets **`base: '/dice-21/'`** so asset paths work on GitHub Pages at `https://<user>.github.io/<repo>/`. That split is configured in **`vite.config.js`** (`command === 'build'`).
+
 ---
 
 ## Multiplayer (WebSocket)
@@ -253,18 +255,36 @@ If you change the server port, either keep **8788** or update the client to matc
 
 ---
 
-## Build
+## Build & GitHub Pages
+
+### What gets built
 
 ```bash
 npm run build
 ```
 
-Output: `dist/`. Serve it as static files; multiplayer still needs `mp-server` (or equivalent) where the client expects it.
+This runs **`prebuild`** (e.g. DJ manifest generation), then **Vite** writes the **production static site** to **`docs/`** (see `build.outDir` in **`vite.config.js`**). That output is the **bundled HTML/JS** plus a copy of **`public/`** (audio, etc.). **`docs/` is generated**—do not treat it as the source of truth for game logic; edit **`dice-21/`**, **`poker-dice/`**, **`public/`**, and the root **`index.html`**, then rebuild.
+
+- **`npm run preview`** — Serves the **`docs/`** build locally so you can sanity-check production URLs and `/dice-21/` asset paths before pushing.
+
+**`dist/`** is listed in **`.gitignore`** for stray local outputs; this repo’s Vite build is configured to use **`docs/`**, not `dist/`.
+
+### GitHub Pages (commit `docs/`, no Actions deploy required)
+
+1. **Settings** → **Pages** → **Build and deployment** → **Deploy from a branch**.
+2. **Branch:** **`main`**, **Folder:** **`/docs`** (root of the site is `docs/index.html`).
+
+After you change anything that should go live, run **`npm run build`**, commit the updated **`docs/`** (and your source changes), and push **`main`**. GitHub serves whatever is committed under **`docs/`**.
+
+### Production static hosting elsewhere
+
+Serve the contents of **`docs/`** as static files at a URL whose path matches your **`base`** in `vite.config.js` (for this repo, **`/dice-21/`** on the project site). Multiplayer still needs **`mp-server`** (or equivalent) where the client expects it.
 
 | Script | Purpose |
 |--------|---------|
-| `npm run dev` | Vite dev server |
-| `npm run build` | Production build → `dist/` |
+| `npm run dev` | Vite dev server (`base` `/`) |
+| `npm run build` | Production build → **`docs/`** |
+| `npm run preview` | Preview **`docs/`** locally (production `base`) |
 | `npm run mp-server` | WebSocket relay (`mp-server.mjs`) |
 
 ---

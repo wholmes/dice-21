@@ -9,6 +9,7 @@
     "prebuild": "npm run dj:manifest",
     "dev": "vite",
     "build": "vite build",
+    "preview": "vite preview",
     "mp-server": "node mp-server.mjs"
   },
   "dependencies": {
