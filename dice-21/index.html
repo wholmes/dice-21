@@ -37,6 +37,12 @@
         max-width: none;
         z-index: 0;
       }
+      /* Mobile UI: shift the WebGL view up slightly in portrait so the table isn’t vertically centered with empty bands */
+      @media (max-width: 640px) {
+        html.is-mobile-ui canvas {
+          transform: translate3d(0, -5vh, 0);
+        }
+      }
       /* Upper-left: earned badge artwork only when unlocked; locked slots show a neutral placeholder */
       .d21-badge-showcase {
         position: fixed;
