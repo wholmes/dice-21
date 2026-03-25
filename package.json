@@ -9,7 +9,9 @@
     "prebuild": "npm run dj:manifest",
     "dev": "vite",
     "build": "vite build",
+    "build:arcade": "BASE_PATH=/arcade/ vite build",
     "preview": "vite preview",
+    "preview:arcade": "BASE_PATH=/arcade/ vite preview",
     "mp-server": "node mp-server.mjs"
   },
   "dependencies": {

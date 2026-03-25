@@ -75,6 +75,78 @@ function setMobileClass() {
   document.documentElement.classList.toggle('is-mobile-ui', m)
   const bar = $('mobileQuickBar')
   if (bar) bar.setAttribute('aria-hidden', m ? 'false' : 'true')
+  syncBadgeMobileLayout(m)
+}
+
+const BADGE_LS = 'd21_ui_badgeOverlay_open'
+
+function readBadgeOverlayPref() {
+  try {
+    const v = localStorage.getItem(BADGE_LS)
+    if (v === '1') return true
+    if (v === '0') return false
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function writeBadgeOverlayPref(open) {
+  try {
+    localStorage.setItem(BADGE_LS, open ? '1' : '0')
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Badges: on narrow screens, collapsed strip + tap opens full overlay on top */
+function syncBadgeMobileLayout(isMobile) {
+  const root = $('d21BadgeShowcase')
+  const backdrop = $('d21BadgeBackdrop')
+  const toggle = $('d21BadgeToggle')
+  if (!root || !backdrop || !toggle) return
+
+  if (!isMobile) {
+    root.classList.remove('is-badge-expanded')
+    root.classList.remove('is-badge-collapsed')
+    backdrop.hidden = true
+    backdrop.setAttribute('aria-hidden', 'true')
+    toggle.setAttribute('aria-expanded', 'true')
+    document.body.style.overflow = ''
+    return
+  }
+
+  const saved = readBadgeOverlayPref()
+  const open = saved === true
+  root.classList.toggle('is-badge-expanded', open)
+  root.classList.toggle('is-badge-collapsed', !open)
+  backdrop.hidden = !open
+  backdrop.setAttribute('aria-hidden', open ? 'false' : 'true')
+  toggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+  document.body.style.overflow = open ? 'hidden' : ''
+}
+
+function setBadgeOverlayOpen(open) {
+  if (!isMobileLayout()) return
+  const root = $('d21BadgeShowcase')
+  const backdrop = $('d21BadgeBackdrop')
+  const toggle = $('d21BadgeToggle')
+  if (!root || !backdrop || !toggle) return
+
+  root.classList.toggle('is-badge-expanded', open)
+  root.classList.toggle('is-badge-collapsed', !open)
+  backdrop.hidden = !open
+  backdrop.setAttribute('aria-hidden', open ? 'false' : 'true')
+  toggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+  writeBadgeOverlayPref(open)
+  document.body.style.overflow = open ? 'hidden' : ''
+}
+
+function toggleBadgeOverlay() {
+  if (!isMobileLayout()) return
+  const root = $('d21BadgeShowcase')
+  const open = !root?.classList.contains('is-badge-expanded')
+  setBadgeOverlayOpen(open)
 }
 
 function restoreDocks(app, ui) {
@@ -101,7 +173,11 @@ function closeSheet() {
     backdrop.setAttribute('aria-hidden', 'true')
   }
   restoreDocks(app, ui)
-  document.body.style.overflow = ''
+  if ($('d21BadgeShowcase')?.classList.contains('is-badge-expanded')) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
 }
 
 function openSheet(mode) {
@@ -195,10 +271,25 @@ function init() {
 
   backdrop?.addEventListener('click', closeSheet)
   closeBtn?.addEventListener('click', closeSheet)
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !$('mobileSheet')?.hidden) closeSheet()
+
+  $('d21BadgeToggle')?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    toggleBadgeOverlay()
+  })
+  $('d21BadgeBackdrop')?.addEventListener('click', () => {
+    if (isMobileLayout()) setBadgeOverlayOpen(false)
   })
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return
+    if (!$('mobileSheet')?.hidden) {
+      closeSheet()
+      return
+    }
+    if (isMobileLayout() && $('d21BadgeShowcase')?.classList.contains('is-badge-expanded')) {
+      setBadgeOverlayOpen(false)
+    }
+  })
 }
 
 init()
