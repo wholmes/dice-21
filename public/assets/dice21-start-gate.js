@@ -10,9 +10,10 @@
   const btn = document.getElementById('d21StartBtn')
   if (!gate || !btn) return
 
+  /** Resolve paths relative to site root: page lives under /dice-21/, audio and assets are siblings (../audio, ../assets). */
   function publicUrl(rel) {
     const clean = rel.replace(/^\//, '')
-    return new URL(clean, document.baseURI).href
+    return new URL('../' + clean, document.baseURI).href
   }
 
   function preloadAudio() {
