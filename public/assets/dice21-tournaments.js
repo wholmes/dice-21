@@ -1,16 +1,16 @@
 /**
  * Dice 21 — optional career tournaments (real bankroll, same lifetime stats).
  * Disabled for MP guests. Gates use max-bet tier + hands + $ won (not lsW alone).
+ * Tournament list and series length: edit `dice21-rules.js` (see `window.__d21Rules`).
  *
  * Copyright © Whittfield Holmes. All rights reserved.
  */
 ;(function () {
   const STORAGE_DONE = 'dice21_tournament_done'
   const STORAGE_RUN = 'dice21_tournament_run'
-  const WINS_TO_CLINCH = 2
 
-  /** @type {readonly { id: number, name: string, prize: string, tierMin: number, minHands: number, minWon: number }[]} */
-  const TOURNAMENTS = Object.freeze([
+  /** Fallback if `dice21-rules.js` did not load */
+  const DEFAULT_TOURNAMENTS = Object.freeze([
     { id: 1, name: 'Club Classic', prize: 'Big-screen TV', tierMin: 5, minHands: 12, minWon: 50 },
     { id: 2, name: 'Skyline Open', prize: 'Laptop & gear', tierMin: 5, minHands: 28, minWon: 500 },
     { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', tierMin: 25, minHands: 55, minWon: 1800 },
@@ -18,6 +18,19 @@
     { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', tierMin: 100, minHands: 125, minWon: 6500 },
     { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', tierMin: 100, minHands: 180, minWon: 8500 },
   ])
+
+  function tournamentsList() {
+    const t = window.__d21Rules && window.__d21Rules.tournaments
+    return Array.isArray(t) && t.length ? t : DEFAULT_TOURNAMENTS
+  }
+
+  const TOURNAMENTS = Object.freeze(tournamentsList())
+
+  function winsToClinch() {
+    const n = window.__d21Rules && window.__d21Rules.tournamentWinsToClinch
+    const v = Number(n)
+    return v >= 1 && v <= 9 ? v | 0 : 2
+  }
 
   function isGuest() {
     return window.__d21Role === 'guest'
@@ -34,12 +47,7 @@
 
   /** Mirrors main bundle `d21StakeTierMax` (preview stakes not applied here). */
   function stakeTierMax(h, w) {
-    const hi = h | 0
-    const wi = w | 0
-    if ((hi >= 200 && wi >= 8000) || (hi >= 120 && wi >= 9500) || (hi >= 140 && wi >= 7200)) return 100
-    if ((hi >= 60 && wi >= 2000) || (hi >= 38 && wi >= 2400) || (hi >= 70 && wi >= 1800)) return 25
-    if ((hi >= 12 && wi >= 50) || (hi >= 8 && wi >= 72) || (hi >= 22 && wi >= 40)) return 5
-    return 1
+    return typeof window.__d21RulesStakeTierMax === 'function' ? window.__d21RulesStakeTierMax(h, w) : 1
   }
 
   function readDone() {
@@ -131,7 +139,7 @@
       return
     }
     titleEl.textContent = `${t.name} · Play for ${t.prize}`
-    scoreEl.textContent = `Series ${run.wins}–${run.losses} · first to ${WINS_TO_CLINCH} wins (ties replay)`
+    scoreEl.textContent = `Series ${run.wins}–${run.losses} · first to ${winsToClinch()} wins (ties replay)`
     wrap.hidden = false
     wrap.setAttribute('aria-hidden', 'false')
   }
@@ -177,7 +185,7 @@
         statusText = `Need max bet $${t.tierMin}+ · ${t.minHands} hands · $${t.minWon.toLocaleString()} won`
       } else if (run && run.id === t.id) {
         statusClass = 'active'
-        statusText = `Series ${run.wins}–${run.losses} · first to ${WINS_TO_CLINCH}`
+        statusText = `Series ${run.wins}–${run.losses} · first to ${winsToClinch()}`
         btnHtml = ''
       } else if (busyOther) {
         statusText = 'Finish your current tournament first'
@@ -207,7 +215,7 @@
     const t = TOURNAMENTS.find((x) => x.id === id)
     if (!t) return
     writeRun({ id, wins: 0, losses: 0 })
-    showToast(t.name, `Best of series: first to ${WINS_TO_CLINCH} wins · real chips · ties replay`, 4000)
+    showToast(t.name, `Best of series: first to ${winsToClinch()} wins · real chips · ties replay`, 4000)
     renderList()
   }
 
@@ -236,7 +244,7 @@
     if (outcome === 'player') run.wins++
     else if (outcome === 'ai') run.losses++
 
-    if (run.wins >= WINS_TO_CLINCH) {
+    if (run.wins >= winsToClinch()) {
       const done = readDone()
       if (!done.includes(run.id)) {
         done.push(run.id)
@@ -250,7 +258,7 @@
       return
     }
 
-    if (run.losses >= WINS_TO_CLINCH) {
+    if (run.losses >= winsToClinch()) {
       writeRun(null)
       showToast('Tournament lost', `${t.name} — house wins the series. Try again anytime.`, 4000)
       renderList()

@@ -54,6 +54,18 @@ Changing mode asks for **confirmation** first (dealer rules and Fortune payouts 
 
 ---
 
+## Dice 21 — tuning rules (balance)
+
+Editable in **`public/assets/dice21-rules.js`** (loaded before the main game bundle):
+
+- **Stake unlocks** — `stakeTiers` (hands + lifetime pot $ won per path), highest tier checked first.
+- **Stake progress meter** — `stakeProgressTowardNext` (paths toward the next max bet).
+- **Tournaments** — `tournaments` rows and `tournamentWinsToClinch`.
+
+After changing values, refresh the page. Keep `README` tables in sync if you document numbers here.
+
+---
+
 ## Dice 21 — progressive stakes & bankroll
 
 - **Starting position:** Everyone begins at **$1** max bet (pot up to **$2** with the match). Your **table bankroll** scales with tier: **100× your max bet** (e.g. $100 bank each side at $1 stakes, up to **$10,000** each at $100 stakes).
