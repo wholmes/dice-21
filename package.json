@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dj:manifest": "node scripts/generate-dj-manifest.mjs",
-    "predev": "npm run dj:manifest",
-    "prebuild": "npm run dj:manifest",
+    "sync-audio": "node scripts/sync-audio-to-public.mjs",
+    "predev": "npm run sync-audio && npm run dj:manifest",
+    "prebuild": "npm run sync-audio && npm run dj:manifest",
     "dev": "vite",
     "build": "vite build && node scripts/patch-dice21-entry.mjs",
     "build:static": "BASE_PATH=./ vite build && node scripts/patch-dice21-entry.mjs",

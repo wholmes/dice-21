@@ -31,7 +31,9 @@
   }
 
   function waitAndInit() {
-    if (typeof window.__d21ViewOrbit === 'function') {
+    const gate = document.getElementById('d21StartGate')
+    const pastStart = gate ? gate.hidden : true
+    if (typeof window.__d21ViewOrbit === 'function' && pastStart) {
       pad.hidden = false
       pad.setAttribute('aria-hidden', 'false')
       return

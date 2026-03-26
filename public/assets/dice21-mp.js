@@ -102,7 +102,6 @@ function setRole(role) {
 function applyGuestChrome(isGuest) {
   const sel = [
     '#btnDeal',
-    '#btnBetDock',
     '#btnHit',
     '#btnStand',
     '#gameMode',
