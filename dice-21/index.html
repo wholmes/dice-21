@@ -1162,6 +1162,14 @@
         color: #e8e8f0;
         border-color: rgba(255, 255, 255, 0.12);
       }
+      .chip-btn.chip-d500 {
+        background: linear-gradient(165deg, #6b4fd8, #3a1f8c);
+        color: #f4f0ff;
+      }
+      .chip-btn.chip-d1000 {
+        background: linear-gradient(165deg, #d4a017, #8a5a00);
+        color: #1a1204;
+      }
       #betHud {
         font-size: 10px;
         line-height: 1.35;
@@ -2800,7 +2808,7 @@
           <span class="d21-stakes-up-chip d21-stakes-up-chip--2"></span>
           <span class="d21-stakes-up-chip d21-stakes-up-chip--1"></span>
         </div>
-        <p id="d21StakesUpHeading" class="d21-stakes-up-kicker">New table unlocked</p>
+        <p id="d21StakesUpHeading" class="d21-stakes-up-kicker">Higher limits unlocked</p>
         <p class="d21-stakes-up-amount" id="d21StakesUpAmt">$5</p>
         <p class="d21-stakes-up-detail" id="d21StakesUpDetail"></p>
         <button type="button" class="d21-stakes-up-btn" id="d21StakesUpDismiss">Continue</button>
@@ -2867,6 +2875,8 @@
         <button type="button" class="chip-btn chip-d5" data-denom="5" aria-pressed="false">$5</button>
         <button type="button" class="chip-btn chip-d25" data-denom="25" aria-pressed="false">$25</button>
         <button type="button" class="chip-btn chip-d100" data-denom="100" aria-pressed="false">$100</button>
+        <button type="button" class="chip-btn chip-d500" data-denom="500" aria-pressed="false" hidden>$500</button>
+        <button type="button" class="chip-btn chip-d1000" data-denom="1000" aria-pressed="false" hidden>$1000</button>
       </div>
       <p id="betHud" class="label-muted">Bet $1 · next pot $2</p>
       <div class="d21-stake-meter" id="d21StakeMeter">
@@ -2902,7 +2912,7 @@
       </div>
     </div>
     <div id="feltDock">
-      <!-- Felt swatches hidden: table felt follows stake tier (see d21ApplyTableTheme). -->
+      <!-- Felt swatches hidden: default felt is fixed; stake tier only unlocks higher bet limits + bankroll scale. -->
       <div class="felt-picker-section" hidden>
         <p class="bet-dock-label">Felt</p>
         <div class="felt-picker" role="group" aria-label="Table felt">

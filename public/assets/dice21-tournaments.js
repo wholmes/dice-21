@@ -1,6 +1,6 @@
 /**
  * Dice 21 — optional career tournaments (real bankroll, same lifetime stats).
- * Disabled for MP guests. Gates use max-bet tier + hands + $ won (not lsW alone).
+ * Disabled for MP guests. Gates use career table index (`minTable`) + hands + $ won.
  * Tournament list and series length: edit `dice21-rules.js` (see `window.__d21Rules`).
  *
  * Copyright © Whittfield Holmes. All rights reserved.
@@ -11,12 +11,12 @@
 
   /** Fallback if `dice21-rules.js` did not load */
   const DEFAULT_TOURNAMENTS = Object.freeze([
-    { id: 1, name: 'Club Classic', prize: 'Big-screen TV', tierMin: 5, minHands: 12, minWon: 50 },
-    { id: 2, name: 'Skyline Open', prize: 'Laptop & gear', tierMin: 5, minHands: 28, minWon: 500 },
-    { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', tierMin: 25, minHands: 55, minWon: 1800 },
-    { id: 4, name: 'Elite Showcase', prize: 'Sports car weekend', tierMin: 25, minHands: 90, minWon: 4000 },
-    { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', tierMin: 100, minHands: 125, minWon: 6500 },
-    { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', tierMin: 100, minHands: 180, minWon: 8500 },
+    { id: 1, name: 'Club Classic', prize: 'Big-screen TV', minTable: 0, minHands: 12, minWon: 50 },
+    { id: 2, name: 'Skyline Open', prize: 'Laptop & gear', minTable: 0, minHands: 28, minWon: 500 },
+    { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', minTable: 1, minHands: 55, minWon: 1800 },
+    { id: 4, name: 'Elite Showcase', prize: 'Sports car weekend', minTable: 1, minHands: 90, minWon: 4000 },
+    { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', minTable: 2, minHands: 125, minWon: 6500 },
+    { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', minTable: 3, minHands: 180, minWon: 8500 },
   ])
 
   function tournamentsList() {
@@ -43,11 +43,6 @@
     } catch {
       return { lsH: 0, lsW: 0 }
     }
-  }
-
-  /** Mirrors main bundle `d21StakeTierMax` (preview stakes not applied here). */
-  function stakeTierMax(h, w) {
-    return typeof window.__d21RulesStakeTierMax === 'function' ? window.__d21RulesStakeTierMax(h, w) : 1
   }
 
   function readDone() {
@@ -88,8 +83,9 @@
     }
   }
 
-  function gateMet(t, lsH, lsW, tierMax) {
-    if (tierMax < t.tierMin) return false
+  function gateMet(t, lsH, lsW, tableIdx) {
+    const minT = typeof t.minTable === 'number' ? t.minTable | 0 : 0
+    if ((tableIdx | 0) < minT) return false
     if (lsH < t.minHands) return false
     if (lsW < t.minWon) return false
     return true
@@ -161,14 +157,15 @@
     const done = readDone()
     const run = readRun()
     const { lsH, lsW } = readLifetime()
-    const tierMax = stakeTierMax(lsH, lsW)
+    const tableIdx =
+      typeof window.__d21GameTableIndex === 'number' ? window.__d21GameTableIndex | 0 : 0
 
     if (countEl) countEl.textContent = `${done.length}/${TOURNAMENTS.length}`
 
     root.innerHTML = TOURNAMENTS.map((t) => {
       const completed = done.includes(t.id)
       const needPrev = !prevDone(t, done)
-      const gateOk = gateMet(t, lsH, lsW, tierMax)
+      const gateOk = gateMet(t, lsH, lsW, tableIdx)
       const eligible = !completed && !needPrev && gateOk
       const busyOther = run && run.id !== t.id
 
@@ -182,7 +179,8 @@
       } else if (needPrev) {
         statusText = `Locked — clear tournament ${t.id - 1} first`
       } else if (!gateOk) {
-        statusText = `Need max bet $${t.tierMin}+ · ${t.minHands} hands · $${t.minWon.toLocaleString()} won`
+        const minT = typeof t.minTable === 'number' ? t.minTable | 0 : 0
+        statusText = `Need table ${minT + 1}+ · ${t.minHands} hands · $${t.minWon.toLocaleString()} won`
       } else if (run && run.id === t.id) {
         statusClass = 'active'
         statusText = `Series ${run.wins}–${run.losses} · first to ${winsToClinch()}`
@@ -320,6 +318,7 @@
 
   window.addEventListener('d21-ready', init)
   window.addEventListener('d21-rolechange', onRoleChange)
+  window.addEventListener('d21-table', renderList)
   window.addEventListener('storage', (e) => {
     if (e.key === 'dice21_lifetime_v1' || e.key === STORAGE_DONE || e.key === STORAGE_RUN) renderList()
   })

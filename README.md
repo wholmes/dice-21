@@ -54,19 +54,36 @@ Changing mode asks for **confirmation** first (dealer rules and Fortune payouts 
 
 ---
 
-## Dice 21 — tuning rules (balance)
+## Dice 21 — rules config & balance (`dice21-rules.js`)
 
-Editable in **`public/assets/dice21-rules.js`** (loaded before the main game bundle):
+**Authoritative tunables** live in **`public/assets/dice21-rules.js`**. It runs as a normal (non-module) script **before** the main game bundle and **`dice21-tournaments.js`** (see **`dice-21/index.html`**). Edit that file and refresh—no need to change the minified main chunk for stake numbers.
 
-- **Stake unlocks** — `stakeTiers` (hands + lifetime pot $ won per path), highest tier checked first.
-- **Stake progress meter** — `stakeProgressTowardNext` (paths toward the next max bet).
-- **Tournaments** — `tournaments` rows and `tournamentWinsToClinch`.
+### What it defines
 
-After changing values, refresh the page. Keep `README` tables in sync if you document numbers here.
+| Export / global | Role |
+|-----------------|------|
+| **`window.__d21Rules`** | Plain object: `version`, `stakeTiers`, `stakeProgressTowardNext`, `tournaments`, `tournamentWinsToClinch`. |
+| **`window.__d21RulesStakeTierMax(h, w)`** | Returns **`1` \| `5` \| `25` \| `100`** from lifetime hands `h` and lifetime pot $ won `w` (same as in-game tier). |
+| **`window.__d21RulesStakeProgressPaths(achievedMax)`** | Paths for the **stake meter** toward the *next* tier; `achievedMax` is current max bet **1**, **5**, or **25** (empty at **100**). |
+
+### Semantics (important)
+
+- **`stakeTiers`** — Ordered **highest `maxBet` first** (100 → 25 → 5). For each tier, **`paths`** is a list of **`[hands, lifetimePotWon]`** pairs. The player unlocks that tier if **any one** path matches (**OR**). Inside a path, **both** numbers must be met (**AND**).
+- **`stakeProgressTowardNext`** — Keys **`1`**, **`5`**, **`25`**: each value is a list of **`[hands, $ won]`** paths used only for the **progress bar / “closest path”** math toward the *next* tier (same OR-of-AND idea).
+- **`tournaments`** — Six objects: `id`, `name`, `prize` (flavor copy), `tierMin` (max-bet denomination required), `minHands`, `minWon`. See **[Career tournaments](#dice-21--career-tournaments)**.
+- **`tournamentWinsToClinch`** — Wins needed to win a tournament series (default **2**, “first to 2”).
+
+If **`dice21-rules.js`** fails to load, the main bundle falls back to safe defaults; **`dice21-tournaments.js`** keeps a small **default** tournament list for the same situation.
+
+### Keeping copy in sync
+
+The **stake help** modal in **`dice-21/index.html`** (and the **tables below**) are **documentation only**. After changing numbers in **`dice21-rules.js`**, update the modal text and this README if you want them to match.
 
 ---
 
 ## Dice 21 — progressive stakes & bankroll
+
+The **tables below** mirror **`public/assets/dice21-rules.js`** at the time this doc was written. If numbers diverge, trust **`dice21-rules.js`**.
 
 - **Starting position:** Everyone begins at **$1** max bet (pot up to **$2** with the match). Your **table bankroll** scales with tier: **100× your max bet** (e.g. $100 bank each side at $1 stakes, up to **$10,000** each at $100 stakes).
 - **Unlocking bigger chips** uses **lifetime hands played** (`lsH`) and **lifetime dollars won** (`lsW`). **`lsW` is the running total of pot payouts you’ve collected on wins** (it grows by the full pot each time you win—not net profit, and big pots or doubles move it faster). You must satisfy **one** of the rows below for each tier (standard path **or** a **“hot”** path if you’re winning aggressively).
@@ -92,22 +109,54 @@ If you’ve pulled in enough **lifetime pot won** at slightly lower hand counts,
 
 The **bet dock** shows a **stake hint** line (`#d21StakeHint`) with your current progress toward the next tier, including both the **standard** and **hot** thresholds so you can see which path you’re closest to.
 
-When you unlock a tier, you get a **stakes-up** celebration and the **table theme** updates (see below). Related badges: **Club member** ($5), **Premium player** ($25), **Elite player** ($100).
+When you unlock a tier, you get a **stakes-up** celebration: you can bet **more per hand**. Your **chip stacks are not refilled or reset** for that alone—you keep whatever you had on the table. Related badges: **Club member** ($5), **Premium player** ($25), **Elite player** ($100).
+
+### Table bankroll persistence (sessions)
+
+Current **table** chips (`D` / `R`) and selected chip **`g`** are saved to **`localStorage`** as **`dice21_table_session_v1`** (`{ v:1, D, R, g }`) so a refresh does not always reset stacks. On load, stacks are **capped** at **100× current max bet** (your tier’s bankroll “ceiling”), not forced up to that amount when you unlock a higher tier mid-session.
+
+**Stacks reset to the default for your current tier** (100× max bet each side) only when you **change the table felt** (hidden dev swatches in **`dice-21/index.html`**) or use **Reset all progress** (which also clears this key). Unlocking higher bet limits alone does **not** reset stacks.
 
 ---
 
-## Dice 21 — table look (stake tier)
+## Dice 21 — career tournaments
 
-The **felt color**, scene lighting, and the **logo** painted on the felt match your **current max stake tier**—the table “levels up” with your career.
+Optional **best-of series** mini-events (fantasy prizes only). Implemented in **`public/assets/dice21-tournaments.js`**, with **gates** and **series length** defined in **`public/assets/dice21-rules.js`** (`tournaments`, `tournamentWinsToClinch`).
 
-| Tier | Table vibe | Logo flavor |
-|------|------------|-------------|
-| **$1** | Classic emerald | “21” + DICE 21 |
-| **$5** | Club | “CLUB” line |
-| **$25** | Premium | “PREMIUM” |
-| **$100** | Elite / high-stakes | “HIGH STAKES”, “MAX $100 · DICE 21”, gold treatment |
+### Design choices
 
-Tier applies on load, when you unlock a new tier, and after **Reset all progress** (back to $1 look). A **felt swatch** strip exists in the HTML for palette reference but is **hidden** in the shipped UI—the live table theme is driven by **stake tier** (`d21ApplyTableTheme`), not manual swatch picks.
+- **Real bankroll** — You play normal hands with your table chips; no separate “entry fee” currency.
+- **Lifetime still counts** — Hands and **`lsW`** update exactly like outside a tournament.
+- **Gates** — Each event requires **max-bet tier** (`tierMin`: 5 / 25 / 100), **minimum lifetime hands**, and **minimum lifetime $ won** (same style as career progression—avoids tuning unlocks on **`lsW`** alone).
+- **Order** — Events **1 → 6** must be **cleared in order**; event **1** has no prerequisite.
+- **Series** — **First to `tournamentWinsToClinch` wins** (default **2**). **Pushes** do not move the series.
+- **Double-or-nothing** — **Off** while a series is active (and the double `db` state is not set on wins during a series).
+- **Multiplayer** — **Disabled for guests** (`window.__d21Role === 'guest'`): spectators do not see tournament UI; becoming a guest clears an in-progress run. **Hosts** and **solo** play can use tournaments.
+
+### Default tournament list (see `dice21-rules.js` for edits)
+
+| # | Name | Prize (flavor) | `tierMin` | Min hands | Min $ won |
+|---|------|----------------|-----------|-----------|-----------|
+| 1 | Club Classic | Big-screen TV | 5 | 12 | 50 |
+| 2 | Skyline Open | Laptop & gear | 5 | 28 | 500 |
+| 3 | Premium Gala | Jewelry & watch | 25 | 55 | 1800 |
+| 4 | Elite Showcase | Sports car weekend | 25 | 90 | 4000 |
+| 5 | High Roller Cup | Yacht charter | 100 | 125 | 6500 |
+| 6 | Grand Invitational | Dream garage & collection | 100 | 180 | 8500 |
+
+Tournament keys **`dice21_tournament_done`** and **`dice21_tournament_run`** are documented in the **[browser storage master table](#dice-21--browser-storage-master-table)**.
+
+### Hooks from the main bundle
+
+The minified main chunk calls **`window.__d21TournamentAfterHand(result)`** after each resolved hand, **`window.__d21TournamentNoDouble()`** to skip double-offer during a series, and **`window.__d21TournamentReset()`** on **Reset all progress**. **`dice21-mp.js`** hides the tournaments panel for guests and fires **`d21-rolechange`** when MP role changes.
+
+---
+
+## Dice 21 — table look (single table, progressive limits)
+
+The shipped game uses **one** default felt and **one** neutral “21 · DICE 21” logo on the felt. **Stake tier** (Club / Premium / Elite in badges and copy) controls **how much you’re allowed to bet** and your **starting bankroll scale**, not a separate table mesh or room.
+
+A **felt swatch** strip exists in **`dice-21/index.html`** for palette reference but is **hidden** in normal play; it is **not** tied to career tier anymore (`d21ApplyTableTheme` keeps the default felt index).
 
 ### Drinks on the table & Call server
 
@@ -185,7 +234,9 @@ Query parameters are read from **`/dice-21/`** (and the same path on your dev ho
 
 | Parameter | Values | Read by | Effect |
 |-----------|--------|---------|--------|
-| **`previewStakes`** | `1`, `5`, `25`, `100`, or **empty** | Main game bundle | **Preview tier** for this load only: max bet, bankroll, felt, logo, chip cap, stake hint. Does **not** change lifetime stats in `localStorage`. Invalid number → **`5`**. Empty → **`5`**. |
+| **`previewStakes`** | `1`, `5`, `25`, `100`, or **empty** | Main game bundle | **Preview tier** for this load only: max bet, bankroll, chip cap, stake hint (visual felt/logo stay the default). Does **not** change lifetime stats in `localStorage`. Invalid number → **`5`**. Empty → **`5`**. Does **not** move you through the **table ladder**—use **`d21Table`** / **`d21Phase1`** (or **`jumpTable`**) for that. |
+| **`d21Table`** | `0` … `tables.length − 1` (integer, **0-based**) | Main bundle | **Testing:** jump to a **career table** from **`dice21-rules.js`** `tables`. Resets **both** stacks to that table’s **`startBank`**, applies felt by table index, and **removes** `dice21_table_session_v1` for this load. **Omitted** = normal load from saved session / defaults. |
+| **`d21Phase1`** | `0` … `winsToUnlock` (integer) | Main bundle | **Testing:** only with **`d21Table`**. Sets how many **player wins while on min bet** to simulate (capped per table). **`0`** = still restricted to min bet. **`10`** (when `winsToUnlock` is **10**) = **unlocked** higher limits on that table. **Omitted** → **`0`**. |
 | **`mode`** | `classic`, `sharp`, `chill`, `fortune` | Main bundle | Starting **dealer mode** for this load. Overrides `localStorage` `dice21_mode_v1` until you change mode in the UI (then the UI saves as usual). |
 | **`shakeHint`** | `0` or `1` | Main bundle | **`1`** = show shake overlay hints; **`0`** = hide. Overrides the saved `dice21_shake_hint_overlay` preference for this session until you toggle the checkbox. |
 | **`reducedMotion`** | `1` or `true` | Main bundle | Forces **reduced-motion** behavior (simpler rolls, no shake overlay path, etc.) as if `prefers-reduced-motion: reduce` were on. |
@@ -205,6 +256,17 @@ Query parameters are read from **`/dice-21/`** (and the same path on your dev ho
 - On load, a **delayed** call may also open the stakes-up modal when `previewStakes` is present (visibility for testing).
 - **Remove** `previewStakes` from the URL and reload to use your real **career** tier again.
 
+### Testing table progression (`d21Table` / `d21Phase1`)
+
+Use these to **skip ahead** in the **table-based** career ladder (banks, min bet until `winsToUnlock` wins, then higher limits, then `advanceBank` to promote) without grinding. They apply **after** `dice21-rules.js` loads.
+
+- **`d21Table`** — **0** = first table, **1** = second, … up to **`tables.length − 1`** (see **`public/assets/dice21-rules.js`**). Invalid or out-of-range values are **clamped**.
+- **`d21Phase1`** — Optional. Simulates **player wins at min bet** on that table (capped at that table’s **`winsToUnlock`**). To see **full chip rows** (e.g. **$500** / **$1,000** on the last table), set this to **`winsToUnlock`** (often **`10`**). Omit or use **`0`** to stay on **min bet only**.
+
+**Console (no reload):** `window.__d21Dev.jumpTable(tableIndex, phase1Wins)` — same semantics; **`phase1Wins`** may be omitted (treated as **`0`**). Clears the saved table session and refreshes felt, chips, and meter.
+
+**Remove** `d21Table` / `d21Phase1` from the URL and reload to return to normal **saved-session** behavior (or play without those params so stacks persist again).
+
 ### Example URLs
 
 ```text
@@ -217,6 +279,8 @@ Query parameters are read from **`/dice-21/`** (and the same path on your dev ho
 /dice-21/?diceSfxHitAt=0.94&diceSfxMs=0
 /dice-21/?diceShakeSfxOffsetMs=40&chipPushBigMin=14
 http://localhost:5173/dice-21/?previewStakes=1&mode=classic
+/dice-21/?d21Table=2
+/dice-21/?d21Table=3&d21Phase1=10
 ```
 
 ### Poker Dice
@@ -227,13 +291,54 @@ No URL overrides are implemented on **`/poker-dice/`** in this repo (multiplayer
 
 ## Dice 21 — reset progress
 
-**Reset all progress** (Lifetime section) clears for this browser:
+**Reset all progress** (Lifetime section) does the following:
 
-- Lifetime stats, badges, stake tier (back to $1 max bet)
-- Current hand, pot, chips on the table
-- Table felt/logo (back to **$1** tier)
+- Zeros **lifetime stats** and **badges**, resets **stake tier** to **$1**, **bankrolls**, and **current hand** / pot / double / toss state (the **visual table** stays the same either way).
+- Removes **table session** and **tournament** keys; calls **`window.__d21TournamentReset()`** (see **`dice21-tournaments.js`**).
+- Sets the **drink** choice back to **liquor** (still stored under **`dice21_drink_v1`**).
 
-It does **not** clear your chosen **dealer mode** (`dice21_mode_v1` in `localStorage`). For a full wipe of prefs, clear site data or use a private window.
+Keys and exact behavior are listed in the **[master table](#dice-21--browser-storage-master-table)** below. **Not** cleared on reset: dealer mode, ambience, shake overlay, camera save, server hint flags, felt swatch index, mobile panel open/closed prefs, and **`sessionStorage`** multiplayer keys (tab-scoped).
+
+For a **full** wipe of every persisted pref, clear site data for the origin or use a private window.
+
+---
+
+## Dice 21 — browser storage (master table)
+
+All **Dice 21** persistence uses fixed string keys. Values are **JSON** unless noted.
+
+### `localStorage`
+
+| Key | Typical value | Purpose | **Reset all progress** |
+|-----|---------------|---------|------------------------|
+| **`dice21_lifetime_v1`** | `{ "net", "won", "lost", "hands" }` (numbers) | Lifetime counters for HUD and stake unlocks | Cleared (rewritten to zeros) |
+| **`dice21_achievements_v1`** | `{ "u": [ …achievement ids ], "p": number }` | Unlocked badges (`u`) and push counter (`p`) | Cleared |
+| **`dice21_table_session_v1`** | `{ "v": 2, "ti", "w1", "D", "R", "g" }` (v1 legacy: `D`, `R`, `g` only) | Table index, phase-1 win count, chip stacks, selected denomination | **Removed** |
+| **`dice21_tournament_done`** | JSON array of event **id** numbers | Finished career tournaments | **Removed** |
+| **`dice21_tournament_run`** | `{ "id", "wins", "losses" }` or absent | Active tournament series | **Removed** |
+| **`dice21_drink_v1`** | `"coffee"` \| `"liquor"` \| `"beer"` | Drink prop on the felt | Set to **`"liquor"`** |
+| **`dice21_mode_v1`** | `"classic"` \| `"sharp"` \| `"chill"` \| `"fortune"` | Dealer mode | **Unchanged** |
+| **`dice21_room_amb`** | `"0"` \| `"1"` | Room ambience loop on/off | **Unchanged** |
+| **`dice21_amb_dj`** | `"0"` \| `"1"` | Ambience DJ playlist on/off | **Unchanged** |
+| **`dice21_shake_hint_overlay`** | `"0"` \| `"1"` | Shake hint overlay preference | **Unchanged** |
+| **`dice21_camera_view_v1`** | JSON (`v: 1`, camera pose fields) | Saved table camera view | **Unchanged** |
+| **`dice21_felt_i`** | String (swatch index) | Selected felt swatch (if used) | **Unchanged** |
+| **`dice21_server_used_v1`** | `"1"` when set | Call-server feature has been used | **Unchanged** |
+| **`dice21_server_hint_shown_v1`** | `"1"` when set | One-shot hint for the server / bell | **Unchanged** |
+| **`d21_ui_lifeDetails_open`** | `"0"` \| `"1"` | Lifetime `<details>` open on mobile | **Unchanged** |
+| **`d21_ui_achDetails_open`** | `"0"` \| `"1"` | Badges `<details>` open on mobile | **Unchanged** |
+| **`d21_ui_panelHelp_open`** | `"0"` \| `"1"` | Rules/help panel expanded | **Unchanged** |
+| **`d21_ui_badgeOverlay_open`** | `"0"` \| `"1"` | Badge overlay open preference | **Unchanged** |
+
+### `sessionStorage` (multiplayer only — `dice21-mp.js`)
+
+Cleared when the tab closes; not touched by **Reset all progress**.
+
+| Key | Typical value | Purpose |
+|-----|---------------|---------|
+| **`d21_mp_session`** | Server session id string | Reconnect / resume WebSocket session |
+| **`d21_mp_room`** | 4-character room code | Current room |
+| **`d21_mp_role`** | `"host"` \| `"guest"` | Multiplayer role for this tab |
 
 ---
 
@@ -249,6 +354,8 @@ npm run dev
 Vite prints the URL (often `http://localhost:5173/`; the port changes if that one is busy). Open **`/`** or **`/dice-21/`** for Dice 21, **`/poker-dice/`** for Poker Dice.
 
 **Dev vs production URL base:** `npm run dev` always uses **`base: '/'`**. Production builds must use a **`base`** that matches the URL path where **`dist/`** is hosted (e.g. **`/dice-21/`** vs **`/arcade/`**). See **[DEPLOY.md](./DEPLOY.md)** for commands, GitHub Pages URLs, and the post-build patch.
+
+**Dice 21 scripts:** Tunables and tournament definitions are plain files under **`public/assets/`** — especially **`dice21-rules.js`** (load first) and **`dice21-tournaments.js`** — wired from **`dice-21/index.html`**. The core game ships as a **prebuilt** hashed bundle (**`main-*.js`**) in the same folder; this repo does not include a separate unminified source tree for that file.
 
 ---
 
@@ -330,8 +437,8 @@ Multiplayer still needs **`mp-server`** (or equivalent) reachable where the clie
 - **Table SFX** (impacts, shake loop, pot chip pushes, room ambience, cash register, win sting, etc.) live under **`public/audio/`**; see **[Dice 21 — audio assets (public/audio)](#dice-21--audio-assets-publicaudio)**.
 - **`npm run dj:manifest`** (see **`scripts/generate-dj-manifest.mjs`**) regenerates **`public/audio/dj/manifest.json`** before **`predev`** / **`prebuild`** so new DJ WAVs are picked up without hand-editing JSON.
 - **Stake tier logic** (`d21StakeTierMax`) combines the **standard** thresholds with **alternate “hot”** `(hands, lifetime $ won)` pairs; **`d21StakeHintText`** mirrors that for the on-screen hint (nested tiers: progress toward $5 → $25 → $100).
-- **URL query overrides** (`previewStakes`, `mode`, `shakeHint`, `reducedMotion`, `diceSfxMs`, `diceSfxHitAt`, `diceShakeSfxMs`, `diceShakeSfxOffsetMs`, `chipPushBigMin`, `roomAmbience`, `djAmbience`, `guest`, `wsPort` / `mpPort`) are documented in **[Dice 21 — URL query parameters](#dice-21--url-query-parameters)**.
-- **`window.__d21Dev`** exposes helpers such as **`previewStakesUp(n)`**, **`ambienceDj` / `ambienceRoom`**, and getters for quick tuning without URL flags.
+- **URL query overrides** (`previewStakes`, `d21Table`, `d21Phase1`, `mode`, `shakeHint`, `reducedMotion`, `diceSfxMs`, `diceSfxHitAt`, `diceShakeSfxMs`, `diceShakeSfxOffsetMs`, `chipPushBigMin`, `roomAmbience`, `djAmbience`, `guest`, `wsPort` / `mpPort`) are documented in **[Dice 21 — URL query parameters](#dice-21--url-query-parameters)**.
+- **`window.__d21Dev`** exposes helpers such as **`previewStakesUp(n)`**, **`jumpTable(ti, w1)`** (test table ladder without URL reload), **`ambienceDj` / `ambienceRoom`**, and getters for quick tuning without URL flags.
 - Lifetime counters are initialized at **module top** so tier logic is safe when the logo mesh is created at startup (avoids temporal-dead-zone issues with `lsH` / `lsW`).
 
 ---
