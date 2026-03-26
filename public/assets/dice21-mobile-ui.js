@@ -99,7 +99,24 @@ function writeBadgeOverlayPref(open) {
   }
 }
 
-/** Badges: on narrow screens, collapsed strip + tap opens full overlay on top */
+function syncBadgeToggleChrome(open) {
+  const toggle = $('d21BadgeToggle')
+  if (!toggle) return
+  if (!isMobileLayout()) {
+    toggle.setAttribute('title', 'Show or hide badges')
+    toggle.setAttribute('aria-label', 'Show or hide badges')
+    return
+  }
+  if (open) {
+    toggle.setAttribute('title', 'Close badges')
+    toggle.setAttribute('aria-label', 'Close badges')
+  } else {
+    toggle.setAttribute('title', 'Show badges')
+    toggle.setAttribute('aria-label', 'Show badges')
+  }
+}
+
+/** Badges: on narrow screens, collapsed strip + tap opens bottom sheet (same family as Bet/Table sheet) */
 function syncBadgeMobileLayout(isMobile) {
   const root = $('d21BadgeShowcase')
   const backdrop = $('d21BadgeBackdrop')
@@ -112,6 +129,7 @@ function syncBadgeMobileLayout(isMobile) {
     backdrop.hidden = true
     backdrop.setAttribute('aria-hidden', 'true')
     toggle.setAttribute('aria-expanded', 'true')
+    syncBadgeToggleChrome(false)
     document.body.style.overflow = ''
     return
   }
@@ -123,6 +141,7 @@ function syncBadgeMobileLayout(isMobile) {
   backdrop.hidden = !open
   backdrop.setAttribute('aria-hidden', open ? 'false' : 'true')
   toggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+  syncBadgeToggleChrome(open)
   document.body.style.overflow = open ? 'hidden' : ''
 }
 
@@ -138,8 +157,12 @@ function setBadgeOverlayOpen(open) {
   backdrop.hidden = !open
   backdrop.setAttribute('aria-hidden', open ? 'false' : 'true')
   toggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+  syncBadgeToggleChrome(open)
   writeBadgeOverlayPref(open)
   document.body.style.overflow = open ? 'hidden' : ''
+  if (open) {
+    requestAnimationFrame(() => toggle.focus())
+  }
 }
 
 function toggleBadgeOverlay() {

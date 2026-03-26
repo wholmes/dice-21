@@ -35,7 +35,7 @@ Rolls use a **3D table** view. When the table loads, two idle dice **drop** onto
 
 ### Badges & lifetime stats
 
-The panel tracks **lifetime** net, won, lost, and hands played. **Badges** unlock from milestones (first win, streaks, pushes, high pots, etc.). Stats are stored in the browser (`localStorage`) unless you reset.
+The panel tracks **lifetime** net, won, lost, and hands played. **Lifetime won** in the stats panel is the same running total used for **stake unlocks** (pot payouts on wins). **Badges** unlock from milestones: first hands and wins, dealer modes, **tier unlocks** (Club / Premium / Elite), streaks, pushes, special totals (e.g. 21, 7), doubles, and high-pot achievements. Stats are stored in the browser (`localStorage`) unless you reset.
 
 ---
 
@@ -57,7 +57,9 @@ Changing mode asks for **confirmation** first (dealer rules and Fortune payouts 
 ## Dice 21 — progressive stakes & bankroll
 
 - **Starting position:** Everyone begins at **$1** max bet (pot up to **$2** with the match). Your **table bankroll** scales with tier: **100× your max bet** (e.g. $100 bank each side at $1 stakes, up to **$10,000** each at $100 stakes).
-- **Unlocking bigger chips** needs both **enough lifetime hands played** and **enough lifetime dollars won** (career total, not one session):
+- **Unlocking bigger chips** uses **lifetime hands played** (`lsH`) and **lifetime dollars won** (`lsW`). **`lsW` is the running total of pot payouts you’ve collected on wins** (it grows by the full pot each time you win—not net profit, and big pots or doubles move it faster). You must satisfy **one** of the rows below for each tier (standard path **or** a **“hot”** path if you’re winning aggressively).
+
+### Standard unlock path
 
 | Max bet | Typical pot (2× bet) | Hands (lifetime) | $ won (lifetime) |
 |--------:|----------------------:|-----------------:|-----------------:|
@@ -66,7 +68,19 @@ Changing mode asks for **confirmation** first (dealer rules and Fortune payouts 
 | $25 | $50 | ≥ 60 | ≥ $2,000 |
 | $100 | $200 | ≥ 200 | ≥ $8,000 |
 
-The UI shows progress toward the **next** tier. When you unlock a tier, you get a **stakes-up** celebration and the **table theme** updates (see below).
+### Alternate “hot” paths (faster when luck is on your side)
+
+If you’ve pulled in enough **lifetime pot won** at slightly lower hand counts, you can unlock the next denomination without grinding the standard hand thresholds:
+
+| Unlock | “Hot” option A (hands & $ won) | “Hot” option B (hands & $ won) |
+|--------|----------------------------------|----------------------------------|
+| **Up to $5** | ≥ 10 hands & ≥ **$320** won | ≥ 25 hands & ≥ **$200** won |
+| **Up to $25** | ≥ 38 hands & ≥ **$2,400** won | ≥ 70 hands & ≥ **$1,800** won |
+| **Up to $100** | ≥ 120 hands & ≥ **$9,500** won | ≥ 140 hands & ≥ **$7,200** won |
+
+The **bet dock** shows a **stake hint** line (`#d21StakeHint`) with your current progress toward the next tier, including both the **standard** and **hot** thresholds so you can see which path you’re closest to.
+
+When you unlock a tier, you get a **stakes-up** celebration and the **table theme** updates (see below). Related badges: **Club member** ($5), **Premium player** ($25), **Elite player** ($100).
 
 ---
 
@@ -81,7 +95,11 @@ The **felt color**, scene lighting, and the **logo** painted on the felt match y
 | **$25** | Premium | “PREMIUM” |
 | **$100** | Elite / high-stakes | “HIGH STAKES”, “MAX $100 · DICE 21”, gold treatment |
 
-Tier applies on load, when you unlock a new tier, and after **Reset all progress** (back to $1 look). There is no separate felt color picker in the UI anymore—felt follows progression.
+Tier applies on load, when you unlock a new tier, and after **Reset all progress** (back to $1 look). A **felt swatch** strip exists in the HTML for palette reference but is **hidden** in the shipped UI—the live table theme is driven by **stake tier** (`d21ApplyTableTheme`), not manual swatch picks.
+
+### Drinks on the table & Call server
+
+After the **camera intro**, a **single drink** sits in a fixed spot on the back of the felt (purely atmospheric). **Call server** (bell beside Bet / Hit / Stand) opens a menu: **Coffee**, **Liquor** (whisky glass with ice), or **Beer** (pint-style glass with foam). Your choice is remembered (`dice21_drink_v1` in `localStorage`) and only **one** prop is shown at a time. **Click the drink** to “sip” (level drops slightly). **Reset all progress** returns the drink to **liquor**. These are cosmetic; they do not change odds or payouts.
 
 ---
 
@@ -119,13 +137,16 @@ When the **visible center stack** gains chips, one shot is chosen from:
 
 ### Room ambience & music (DJ)
 
-**Room ambience** is **`freesound_community-casino-ambiance-19130.wav`** (`ambRoom`): one looped casino bed when **Room ambience** is on. **Ambience DJ** is a **playlist** of one-shots—**silk** then **lush**, then repeat—layered on top when **Ambience DJ** is on (independent buffers from the room track).
+**Room ambience** is **`freesound_community-casino-ambiance-19130.wav`** (`ambRoom`): one looped casino bed when **Room ambience** is on.
+
+**Ambience DJ** loads **additional** tracks from **`public/audio/dj/`** using **`public/audio/dj/manifest.json`**: each entry is a filename that gets decoded into a pool. When DJ is on, the game **picks randomly** from that pool (one-shots chained over time), layered independently of the room loop.
 
 | File | Role |
 |------|------|
-| **`freesound_community-casino-ambiance-19130.wav`** | **Room ambience** only (looped; optional Table dock **Room ambience**). |
-| **`silk-icosphere-main-version-15772-01-30.wav`** | **Ambience DJ** playlist (first slot). |
-| **`lush-21-on-the-block-main-version-43576-01-53.wav`** | **Ambience DJ** playlist (second slot). |
+| **`freesound_community-casino-ambiance-19130.wav`** | **Room ambience** only (looped; Table dock **Room ambience**). |
+| **`public/audio/dj/*.wav`** | **Ambience DJ** — whichever files are listed in **`manifest.json`** (defaults include **lush** and **silk** tracks; add WAVs and regenerate the manifest). |
+
+**Build / dev:** `npm run dev` and `npm run build` run **`npm run dj:manifest`** first (`scripts/generate-dj-manifest.mjs`), which refreshes **`manifest.json`** from the WAV files on disk. After adding or renaming DJ tracks, rebuild or run `npm run dj:manifest` so the client loads them.
 
 **Room ambience** is **on by default** (`dice21_room_amb` in `localStorage`, or **`?roomAmbience=1`**). Turn it off for DJ-only or silence.
 
@@ -278,9 +299,10 @@ Then deploy **everything inside** **`dist/`** to your static host (e.g. GitHub P
 
 | Script | Purpose |
 |--------|---------|
-| `npm run dev` | Vite dev server (`base` `/`) |
-| `npm run build` | Production build → **`dist/`** (default **`base`**: **`/dice-21/`**) + DJ manifest + entry-chunk patch |
-| `npm run build:arcade` | Same, with **`base`**: **`/arcade/`** (nested arcade deploy) |
+| `npm run dj:manifest` | Regenerate **`public/audio/dj/manifest.json`** from WAVs in **`public/audio/dj/`** |
+| `npm run dev` | Vite dev server (`base` `/`); **`predev`** runs **`dj:manifest`** first |
+| `npm run build` | **`prebuild`** → **`dj:manifest`** → production build → **`dist/`** (default **`base`**: **`/dice-21/`**) + entry-chunk patch |
+| `npm run build:arcade` | Same as **`build`**, with **`base`**: **`/arcade/`** (nested arcade deploy) |
 | `npm run build:static` | **`base`**: **`./`** — local static server testing from **`dist/`** |
 | `npm run preview` | Preview last **`dist/`** build (same **`base`** as last build) |
 | `npm run preview:arcade` | Preview with **`base` `/arcade/`** (after **`build:arcade`**) |
@@ -294,7 +316,10 @@ Multiplayer still needs **`mp-server`** (or equivalent) reachable where the clie
 
 - Game logic and 3D live in the Dice 21 **main chunk** under `public/assets/` (hashed name in some builds, e.g. `main-BosaNfoM.js`; the entry script `dice21-*.js` imports it).
 - **Table SFX** (impacts, shake loop, pot chip pushes, room ambience, cash register, win sting, etc.) live under **`public/audio/`**; see **[Dice 21 — audio assets (public/audio)](#dice-21--audio-assets-publicaudio)**.
+- **`npm run dj:manifest`** (see **`scripts/generate-dj-manifest.mjs`**) regenerates **`public/audio/dj/manifest.json`** before **`predev`** / **`prebuild`** so new DJ WAVs are picked up without hand-editing JSON.
+- **Stake tier logic** (`d21StakeTierMax`) combines the **standard** thresholds with **alternate “hot”** `(hands, lifetime $ won)` pairs; **`d21StakeHintText`** mirrors that for the on-screen hint (nested tiers: progress toward $5 → $25 → $100).
 - **URL query overrides** (`previewStakes`, `mode`, `shakeHint`, `reducedMotion`, `diceSfxMs`, `diceSfxHitAt`, `diceShakeSfxMs`, `diceShakeSfxOffsetMs`, `chipPushBigMin`, `roomAmbience`, `djAmbience`, `guest`, `wsPort` / `mpPort`) are documented in **[Dice 21 — URL query parameters](#dice-21--url-query-parameters)**.
+- **`window.__d21Dev`** exposes helpers such as **`previewStakesUp(n)`**, **`ambienceDj` / `ambienceRoom`**, and getters for quick tuning without URL flags.
 - Lifetime counters are initialized at **module top** so tier logic is safe when the logo mesh is created at startup (avoids temporal-dead-zone issues with `lsH` / `lsW`).
 
 ---
