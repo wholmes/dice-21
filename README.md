@@ -12,7 +12,7 @@ Two browser games in one [Vite](https://vitejs.dev/) multi-page app: **Dice 21**
 
 ### One round
 
-1. **Pick a chip** ($1, $5, $25, or $100 depending on what you’ve unlocked) and press **Bet** (or the main bet control). You and the house each put that amount in; the **pot** is both antes combined (so a $5 bet ⇒ $10 in the pot before cards/dice).
+1. **Pick a chip** (denominations depend on **career table** + unlocks; the first career table uses **$5**, then **$5 + $10** after enough wins at min bet—see **`dice21-rules.js`**) and press **Bet** (or the main bet control). You and the house each put that amount in; the **pot** is both antes combined (e.g. a **$5** bet ⇒ **$10** in the pot before dice).
 2. You get a **two-dice roll** to start. Your total shows in the panel.
 3. **Hit** to roll more dice, or **Stand** to lock your total and send play to the house.
 4. **Hitting:** If your total is **under 14**, your next hit uses **two dice** at once. At **14 or more**, each hit is **one die** only—so high totals get riskier.
@@ -85,7 +85,15 @@ The **stake help** modal in **`dice-21/index.html`** (and the **tables below**) 
 
 The **tables below** mirror **`public/assets/dice21-rules.js`** at the time this doc was written. If numbers diverge, trust **`dice21-rules.js`**.
 
-- **Starting position:** Everyone begins at **$1** max bet (pot up to **$2** with the match). Your **table bankroll** scales with tier: **100× your max bet** (e.g. $100 bank each side at $1 stakes, up to **$10,000** each at $100 stakes).
+### Career table ladder (`tables` in `dice21-rules.js`)
+
+Each **career table** row defines **`startBank`** (both sides), **`minBet`** until **`winsToUnlock`** player wins, then **`maxBetAfter`** on the **same** felt. The felt theme tracks **table index** (`d21ApplyTableTheme`).
+
+- **Promotion:** You move to the **next** career table when the **house bank hits $0** after a resolved hand (`d21AdvanceTableIfNeeded` in the main bundle). It is **not** tied to your own stack crossing a fixed **`advanceBank`** value; that field remains for **session soft-cap** scaling only (`bankSoftCap`).
+- **First table:** Typically **$5** min bet only, then **$5 + $10** after the win gate (chip ladder includes **$10** between **$5** and **$25** where rules use the default ladder slice).
+- **Last table:** When the house is busted, there is no next table—the **house** is refilled to **`startBank`** (you keep your chips), with a **HOUSE BUSTED** toast so play can continue. Earlier tables show **NEXT TABLE** when the house hits **$0**.
+
+- **Lifetime unlock tiers (badges / stakes-up):** Separate from per-table limits—everyone begins the **lifetime** progression at **$1** max bet in the unlock tables below; your **table** bankroll still scales with **100× max bet** for the active tier (e.g. **$100** each side at **$1** stakes on a table whose rules use **$100** `startBank`, up to **$10,000** each at **$100** stakes when applicable).
 - **Unlocking bigger chips** uses **lifetime hands played** (`lsH`) and **lifetime dollars won** (`lsW`). **`lsW` is the running total of pot payouts you’ve collected on wins** (it grows by the full pot each time you win—not net profit, and big pots or doubles move it faster). You must satisfy **one** of the rows below for each tier (standard path **or** a **“hot”** path if you’re winning aggressively).
 
 ### Standard unlock path
@@ -113,7 +121,7 @@ When you unlock a tier, you get a **stakes-up** celebration: you can bet **more 
 
 ### Table bankroll persistence (sessions)
 
-Current **table** chips (`D` / `R`) and selected chip **`g`** are saved to **`localStorage`** as **`dice21_table_session_v1`** (`{ v:1, D, R, g }`) so a refresh does not always reset stacks. On load, stacks are **capped** at **100× current max bet** (your tier’s bankroll “ceiling”), not forced up to that amount when you unlock a higher tier mid-session.
+Current **table** chips (`D` / `R`), selected chip **`g`**, **table index** **`ti`**, and **phase-1 win count** **`w1`** are saved to **`localStorage`** as **`dice21_table_session_v1`** (prefer **`v: 2`** with **`ti`**, **`w1`**, **`D`**, **`R`**, **`g`**; legacy **`v: 1`** stored **`D`**, **`R`**, **`g`** only) so a refresh does not always reset stacks. On load, stacks are **capped** by the rules **soft cap** (generous vs. **`advanceBank`** / **`startBank`**—see **`bankSoftCap`** in `dice21-rules.js`), not forced up when you unlock a higher tier mid-session.
 
 **Stacks reset to the default for your current tier** (100× max bet each side) only when you **change the table felt** (hidden dev swatches in **`dice-21/index.html`**) or use **Reset all progress** (which also clears this key). Unlocking higher bet limits alone does **not** reset stacks.
 
@@ -258,7 +266,7 @@ Query parameters are read from **`/dice-21/`** (and the same path on your dev ho
 
 ### Testing table progression (`d21Table` / `d21Phase1`)
 
-Use these to **skip ahead** in the **table-based** career ladder (banks, min bet until `winsToUnlock` wins, then higher limits, then `advanceBank` to promote) without grinding. They apply **after** `dice21-rules.js` loads.
+Use these to **skip ahead** in the **table-based** career ladder (banks, min bet until `winsToUnlock` wins, then higher chip limits on that felt; **promotion** in normal play is when the **house bank hits $0**) without grinding. They apply **after** `dice21-rules.js` loads.
 
 - **`d21Table`** — **0** = first table, **1** = second, … up to **`tables.length − 1`** (see **`public/assets/dice21-rules.js`**). Invalid or out-of-range values are **clamped**.
 - **`d21Phase1`** — Optional. Simulates **player wins at min bet** on that table (capped at that table’s **`winsToUnlock`**). To see **full chip rows** (e.g. **$500** / **$1,000** on the last table), set this to **`winsToUnlock`** (often **`10`**). Omit or use **`0`** to stay on **min bet only**.

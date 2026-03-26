@@ -3,7 +3,7 @@
  *
  * Progression is **table-based** (see `tables`): each table has a starting bank,
  * a minimum bet until you hit `winsToUnlock` wins, then higher `maxBetAfter`
- * on the **same** felt. When your stack reaches `advanceBank`, you move to the
+ * on the **same** felt. When the **house bank hits $0**, you move to the
  * next table (new bank, new limits). Tweak numbers here and refresh.
  *
  * Load order: include before `main-BosaNfoM.js` / tournaments
@@ -18,16 +18,16 @@
    * @property {number} minBet — Only this denomination until `winsToUnlock` player wins at this table.
    * @property {number} winsToUnlock — Player wins needed (while on min bet) to unlock `maxBetAfter`.
    * @property {number} maxBetAfter — Highest chip / max bet after the win gate (same table).
-   * @property {number} advanceBank — When your stack D is >= this, you advance to the **next** table (after the hand).
+   * @property {number} advanceBank — Legacy scale for session **soft cap** math only; promotion uses **house bank $0** (see main bundle `d21AdvanceTableIfNeeded`).
    */
 
   /** Four tables — edit freely */
   const tables = [
     {
       startBank: 100,
-      minBet: 1,
+      minBet: 5,
       winsToUnlock: 10,
-      maxBetAfter: 5,
+      maxBetAfter: 10,
       advanceBank: 200,
     },
     {
@@ -55,7 +55,7 @@
     },
   ]
 
-  const LADDER = Object.freeze([1, 5, 25, 100, 500, 1000])
+  const LADDER = Object.freeze([1, 5, 10, 25, 100, 500, 1000])
 
   function tableAt(i) {
     const n = i | 0
@@ -138,7 +138,7 @@
       const w1 = window.__d21GameWinsPhase1 | 0
       return maxBetFor(ti, w1)
     }
-    return 1
+    return 5
   }
 
   window.__d21RulesStakeProgressPaths = function () {

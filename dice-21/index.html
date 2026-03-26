@@ -1153,6 +1153,10 @@
         background: linear-gradient(165deg, #e04555, #9a1830);
         color: #fff;
       }
+      .chip-btn.chip-d10 {
+        background: linear-gradient(165deg, #2a6ea8, #154a78);
+        color: #fff;
+      }
       .chip-btn.chip-d25 {
         background: linear-gradient(165deg, #2ea06a, #136542);
         color: #fff;
@@ -2540,6 +2544,8 @@
         border-radius: 2px;
       }
     </style>
+    <script src="/assets/dice21-clear-storage.js"></script>
+    <script src="/assets/dice21-camera-loading-ui.js"></script>
     <script src="/assets/dice21-rules.js"></script>
     <script src="/assets/dice21-badge-showcase.js"></script>
     <script src="/assets/dice21-tournaments.js" defer></script>
@@ -2871,17 +2877,18 @@
         role="group"
         aria-label="Bet size in dollars"
       >
-        <button type="button" class="chip-btn chip-d1" data-denom="1" aria-pressed="true">$1</button>
-        <button type="button" class="chip-btn chip-d5" data-denom="5" aria-pressed="false">$5</button>
+        <button type="button" class="chip-btn chip-d5" data-denom="5" aria-pressed="true">$5</button>
+        <button type="button" class="chip-btn chip-d10" data-denom="10" aria-pressed="false">$10</button>
+        <button type="button" class="chip-btn chip-d1" data-denom="1" aria-pressed="false">$1</button>
         <button type="button" class="chip-btn chip-d25" data-denom="25" aria-pressed="false">$25</button>
         <button type="button" class="chip-btn chip-d100" data-denom="100" aria-pressed="false">$100</button>
         <button type="button" class="chip-btn chip-d500" data-denom="500" aria-pressed="false" hidden>$500</button>
         <button type="button" class="chip-btn chip-d1000" data-denom="1000" aria-pressed="false" hidden>$1000</button>
       </div>
-      <p id="betHud" class="label-muted">Bet $1 · next pot $2</p>
+      <p id="betHud" class="label-muted">Bet $5 · next pot $10</p>
       <div class="d21-stake-meter" id="d21StakeMeter">
         <div class="d21-stake-meter-head">
-          <span class="d21-stake-meter-label" id="d21StakeMeterLabel">Next unlock: $5 max bet</span>
+          <span class="d21-stake-meter-label" id="d21StakeMeterLabel">Next unlock: $10 max bet</span>
           <span class="d21-stake-meter-pct" id="d21StakeMeterPct" aria-hidden="true">0%</span>
         </div>
         <div
