@@ -1174,6 +1174,15 @@
         background: linear-gradient(165deg, #d4a017, #8a5a00);
         color: #1a1204;
       }
+      .chip-btn.chip-d250 {
+        background: linear-gradient(165deg, #c45a6a, #6a1a2a);
+        color: #fff8f8;
+      }
+      .chip-btn.chip-d5000 {
+        background: linear-gradient(165deg, #e8e4f0, #6a6078);
+        color: #121018;
+        border-color: rgba(255, 255, 255, 0.2);
+      }
       #betHud {
         font-size: 10px;
         line-height: 1.35;
@@ -2829,42 +2838,28 @@
         aria-modal="true"
         aria-labelledby="d21StakeHelpTitle"
       >
-        <h2 id="d21StakeHelpTitle">Unlocking higher bet sizes</h2>
+        <h2 id="d21StakeHelpTitle">How bet limits work</h2>
         <p class="d21-stake-help-lead">
-          Bigger chips unlock over your <strong>whole career</strong>, not a single session. You only need to satisfy
-          <strong>one</strong> unlock path (standard <em>or</em> a “hot” shortcut)—whichever you hit first.
+          Your <strong>max bet</strong> and which <strong>chips</strong> appear come from the <strong>career table</strong> in
+          <strong>dice21-rules.js</strong>: you stay on <strong>min bet</strong> until you’ve won enough hands at that stake
+          (the <strong>stake meter</strong> shows progress), then higher denominations unlock on the <strong>same</strong>
+          felt. To reach the next room, <strong>bust the house bank</strong> (also shown on the meter).
         </p>
         <div class="d21-stake-help-section">
-          <h3>Two stats</h3>
-          <ul>
-            <li>
-              <strong>Hands</strong> — lifetime hands finished (the first number in pairs like <code>96/12</code>).
-            </li>
-            <li>
-              <strong>$ won</strong> — lifetime total of <strong>pot payouts on your wins</strong> (full pot each time, not
-              net profit). Shown like <code>$32/$50</code>: you have <strong>$32</strong> toward a <strong>$50</strong>
-              requirement.
-            </li>
-          </ul>
-        </div>
-        <div class="d21-stake-help-section">
-          <h3>Example: unlocking $5 max bet</h3>
-          <ul>
-            <li><strong>Standard</strong> — at least <strong>12</strong> lifetime hands <em>and</em> at least <strong>$50</strong>
-              in lifetime pot wins.</li>
-            <li>
-              <strong>Hot A</strong> — <strong>8</strong> hands and <strong>$72</strong> won (fewer hands, more winnings).
-            </li>
-            <li>
-              <strong>Hot B</strong> — <strong>22</strong> hands and <strong>$40</strong> won (more hands, lower $ bar).
-            </li>
-          </ul>
-        </div>
-        <div class="d21-stake-help-section">
-          <h3>Higher tiers</h3>
+          <h3>Lifetime hands &amp; $ won</h3>
           <p>
-            The same pattern continues for <strong>$25</strong> and <strong>$100</strong> — standard thresholds plus two hot
-            shortcuts each time.
+            The HUD’s lifetime <strong>hands</strong> and <strong>$ won</strong> (pot payouts on your wins) do
+            <strong>not</strong> change your per-hand max bet in this build. They <strong>do</strong> count toward
+            <strong>career tournament</strong> gates (minimum hands, minimum $ won, minimum table) — see the tournaments
+            list in the Lifetime panel.
+          </p>
+        </div>
+        <div class="d21-stake-help-section">
+          <h3>Badges</h3>
+          <p>
+            Club / Premium / Elite unlock when your <strong>current</strong> allowable max bet (from the career table)
+            reaches <strong>$5</strong> / <strong>$25</strong> / <strong>$100</strong>, not from a separate lifetime grind
+            table.
           </p>
         </div>
         <button type="button" id="d21StakeHelpDismiss">Got it</button>
@@ -2884,6 +2879,8 @@
         <button type="button" class="chip-btn chip-d100" data-denom="100" aria-pressed="false">$100</button>
         <button type="button" class="chip-btn chip-d500" data-denom="500" aria-pressed="false" hidden>$500</button>
         <button type="button" class="chip-btn chip-d1000" data-denom="1000" aria-pressed="false" hidden>$1000</button>
+        <button type="button" class="chip-btn chip-d250" data-denom="250" aria-pressed="false" hidden>$250</button>
+        <button type="button" class="chip-btn chip-d5000" data-denom="5000" aria-pressed="false" hidden>$5k</button>
       </div>
       <p id="betHud" class="label-muted">Bet $5 · next pot $10</p>
       <div class="d21-stake-meter" id="d21StakeMeter">

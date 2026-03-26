@@ -31,31 +31,31 @@
       advanceBank: 200,
     },
     {
-      startBank: 500,
-      minBet: 5,
+      startBank: 2500,
+      minBet: 10,
       winsToUnlock: 10,
       maxBetAfter: 25,
-      advanceBank: 1000,
-    },
-    {
-      startBank: 5000,
-      minBet: 25,
-      winsToUnlock: 10,
-      maxBetAfter: 100,
       advanceBank: 10000,
     },
     {
-      startBank: 50000,
+      startBank: 25000,
       minBet: 100,
       winsToUnlock: 10,
-      maxBetAfter: 1000,
+      maxBetAfter: 250,
       advanceBank: 100000,
+    },
+    {
+      startBank: 500000,
+      minBet: 1000,
+      winsToUnlock: 10,
+      maxBetAfter: 5000,
+      advanceBank: 5000000,
       /** After unlock, allow these denominations (includes min and high chips). */
-      denomsAfter: [100, 500, 1000],
+      denomsAfter: [1000, 5000],
     },
   ]
 
-  const LADDER = Object.freeze([1, 5, 10, 25, 100, 500, 1000])
+  const LADDER = Object.freeze([1, 5, 10, 25, 100, 250, 500, 1000, 5000])
 
   function tableAt(i) {
     const n = i | 0
@@ -105,10 +105,10 @@
   const tournaments = [
     { id: 1, name: 'Club Classic', prize: 'Big-screen TV', minTable: 0, minHands: 12, minWon: 50 },
     { id: 2, name: 'Skyline Open', prize: 'Laptop & gear', minTable: 0, minHands: 28, minWon: 500 },
-    { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', minTable: 1, minHands: 55, minWon: 1800 },
-    { id: 4, name: 'Elite Showcase', prize: 'Sports car weekend', minTable: 1, minHands: 90, minWon: 4000 },
-    { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', minTable: 2, minHands: 125, minWon: 6500 },
-    { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', minTable: 3, minHands: 180, minWon: 8500 },
+    { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', minTable: 1, minHands: 55, minWon: 2200 },
+    { id: 4, name: 'Elite Showcase', prize: 'Sports car weekend', minTable: 1, minHands: 90, minWon: 4800 },
+    { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', minTable: 2, minHands: 125, minWon: 8000 },
+    { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', minTable: 3, minHands: 180, minWon: 25000 },
   ]
 
   const tournamentWinsToClinch = 2
