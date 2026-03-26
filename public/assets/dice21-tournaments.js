@@ -11,12 +11,12 @@
 
   /** @type {readonly { id: number, name: string, prize: string, tierMin: number, minHands: number, minWon: number }[]} */
   const TOURNAMENTS = Object.freeze([
-    { id: 1, name: 'Club Classic', prize: 'Big-screen TV', tierMin: 5, minHands: 15, minWon: 250 },
-    { id: 2, name: 'Skyline Open', prize: 'Laptop & gear', tierMin: 5, minHands: 35, minWon: 900 },
-    { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', tierMin: 25, minHands: 60, minWon: 2000 },
-    { id: 4, name: 'Elite Showcase', prize: 'Sports car weekend', tierMin: 25, minHands: 100, minWon: 4500 },
-    { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', tierMin: 100, minHands: 140, minWon: 7200 },
-    { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', tierMin: 100, minHands: 200, minWon: 9500 },
+    { id: 1, name: 'Club Classic', prize: 'Big-screen TV', tierMin: 5, minHands: 12, minWon: 50 },
+    { id: 2, name: 'Skyline Open', prize: 'Laptop & gear', tierMin: 5, minHands: 28, minWon: 500 },
+    { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', tierMin: 25, minHands: 55, minWon: 1800 },
+    { id: 4, name: 'Elite Showcase', prize: 'Sports car weekend', tierMin: 25, minHands: 90, minWon: 4000 },
+    { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', tierMin: 100, minHands: 125, minWon: 6500 },
+    { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', tierMin: 100, minHands: 180, minWon: 8500 },
   ])
 
   function isGuest() {
@@ -38,7 +38,7 @@
     const wi = w | 0
     if ((hi >= 200 && wi >= 8000) || (hi >= 120 && wi >= 9500) || (hi >= 140 && wi >= 7200)) return 100
     if ((hi >= 60 && wi >= 2000) || (hi >= 38 && wi >= 2400) || (hi >= 70 && wi >= 1800)) return 25
-    if ((hi >= 15 && wi >= 250) || (hi >= 10 && wi >= 320) || (hi >= 25 && wi >= 200)) return 5
+    if ((hi >= 12 && wi >= 50) || (hi >= 8 && wi >= 72) || (hi >= 22 && wi >= 40)) return 5
     return 1
   }
 

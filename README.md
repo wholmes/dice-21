@@ -64,7 +64,7 @@ Changing mode asks for **confirmation** first (dealer rules and Fortune payouts 
 | Max bet | Typical pot (2× bet) | Hands (lifetime) | $ won (lifetime) |
 |--------:|----------------------:|-----------------:|-----------------:|
 | $1 | $2 | — | — |
-| $5 | $10 | ≥ 15 | ≥ $250 |
+| $5 | $10 | ≥ 12 | ≥ $50 |
 | $25 | $50 | ≥ 60 | ≥ $2,000 |
 | $100 | $200 | ≥ 200 | ≥ $8,000 |
 
@@ -74,7 +74,7 @@ If you’ve pulled in enough **lifetime pot won** at slightly lower hand counts,
 
 | Unlock | “Hot” option A (hands & $ won) | “Hot” option B (hands & $ won) |
 |--------|----------------------------------|----------------------------------|
-| **Up to $5** | ≥ 10 hands & ≥ **$320** won | ≥ 25 hands & ≥ **$200** won |
+| **Up to $5** | ≥ 8 hands & ≥ **$72** won | ≥ 22 hands & ≥ **$40** won |
 | **Up to $25** | ≥ 38 hands & ≥ **$2,400** won | ≥ 70 hands & ≥ **$1,800** won |
 | **Up to $100** | ≥ 120 hands & ≥ **$9,500** won | ≥ 140 hands & ≥ **$7,200** won |
 
