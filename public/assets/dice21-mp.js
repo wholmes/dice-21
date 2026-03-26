@@ -114,6 +114,16 @@ function applyGuestChrome(isGuest) {
   })
   const hint = $('d21mpSpectate')
   if (hint) hint.hidden = !isGuest
+  const tour = $('d21TournamentDetails')
+  if (tour) {
+    tour.hidden = !!isGuest
+    tour.setAttribute('aria-hidden', isGuest ? 'true' : 'false')
+  }
+  try {
+    window.dispatchEvent(new CustomEvent('d21-rolechange'))
+  } catch {
+    /* ignore */
+  }
 }
 
 function readHud() {

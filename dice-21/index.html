@@ -677,6 +677,121 @@
       .ach-row.unlocked .ach-desc {
         color: #8a9aaf;
       }
+      /* Career tournaments (optional series — same lifetime stats) */
+      #d21TournamentToast {
+        position: fixed;
+        z-index: 120;
+        left: 50%;
+        bottom: max(16px, env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        max-width: min(92vw, 22rem);
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 12px;
+        line-height: 1.4;
+        color: rgba(230, 236, 248, 0.96);
+        background: rgba(18, 22, 34, 0.94);
+        border: 1px solid rgba(232, 200, 122, 0.35);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.25s ease, visibility 0.25s;
+      }
+      #d21TournamentToast.is-visible {
+        opacity: 1;
+        visibility: visible;
+      }
+      #d21TournamentToast strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #f0d78c;
+        font-weight: 700;
+      }
+      .d21-tournament-toast-sub {
+        display: block;
+        color: rgba(180, 195, 218, 0.95);
+      }
+      #d21TournamentActive {
+        margin: 10px 0 0;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(232, 200, 122, 0.28);
+        background: rgba(24, 28, 42, 0.55);
+      }
+      #d21TournamentActive[hidden] {
+        display: none !important;
+      }
+      #d21TournamentActiveTitle {
+        margin: 0 0 4px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #e8d4a8;
+        line-height: 1.35;
+      }
+      #d21TournamentActiveScore {
+        margin: 0 0 6px;
+        font-size: 11px;
+        color: #8a9aaf;
+        line-height: 1.35;
+      }
+      #d21TournamentAbandon {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+      .d21-tournament-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: min(38vh, 280px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-right: 4px;
+        scrollbar-gutter: stable;
+      }
+      .d21-tournament-row {
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .d21-tournament-row:last-child {
+        border-bottom: none;
+      }
+      .d21-tournament-row-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 4px 10px;
+        margin-bottom: 4px;
+      }
+      .d21-tournament-name {
+        font-weight: 700;
+        font-size: 11px;
+        color: #c8d4e8;
+      }
+      .d21-tournament-prize {
+        font-size: 10px;
+        color: #9aa8bc;
+      }
+      .d21-tournament-row.cleared .d21-tournament-name {
+        color: #6a9e7a;
+      }
+      .d21-tournament-row.active .d21-tournament-name {
+        color: #e8d4a8;
+      }
+      .d21-tournament-status {
+        margin: 0 0 6px;
+        font-size: 10px;
+        line-height: 1.35;
+        color: #6a7a8e;
+      }
+      .d21-tournament-row.eligible .d21-tournament-status {
+        color: #8a9aaf;
+      }
+      .d21-tournament-enter {
+        font-size: 11px;
+        padding: 5px 10px;
+      }
       /* Table felt — fixed bottom-right (mirrors #chipDock) */
       #feltDock {
         position: fixed;
@@ -2427,6 +2542,7 @@
       }
     </style>
     <script src="/assets/dice21-badge-showcase.js"></script>
+    <script src="/assets/dice21-tournaments.js" defer></script>
     <script type="module" crossorigin src="/assets/dice21-DU7nhPGz.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
   </head>
@@ -2678,6 +2794,7 @@
         <p id="powerUpSub"></p>
       </div>
     </div>
+    <div id="d21TournamentToast" class="d21-tournament-toast" hidden aria-live="polite" aria-atomic="true"></div>
     <div id="d21StakesUp" class="d21-stakes-up" aria-hidden="true">
       <div id="d21StakesUpBackdrop" aria-hidden="true"></div>
       <div
@@ -2900,6 +3017,20 @@
           <summary><span class="label-muted">Badges</span> <span id="achCount">0/6</span></summary>
           <div class="lifetime-body ach-body" id="achList"></div>
         </details>
+        <details class="lifetime-details ach-details" id="d21TournamentDetails">
+          <summary>
+            <span class="label-muted">Tournaments</span> <span id="d21TournamentCount">0/6</span>
+          </summary>
+          <p class="label-muted" style="margin: 0 0 8px; font-size: 10px; line-height: 1.4">
+            Optional best-of series (first to 2 wins). Same chips and lifetime stats — fantasy prizes only. Double-or-nothing is off during a series.
+          </p>
+          <div class="lifetime-body d21-tournament-list" id="d21TournamentList"></div>
+        </details>
+        <div id="d21TournamentActive" hidden aria-hidden="true">
+          <p id="d21TournamentActiveTitle" class="d21-tournament-active-title"></p>
+          <p id="d21TournamentActiveScore"></p>
+          <button type="button" class="ghost" id="d21TournamentAbandon">Leave tournament</button>
+        </div>
         <div class="btn-row" style="margin-top: 12px">
           <div class="btn-row-main">
             <button type="button" class="primary" id="btnDeal" aria-label="Place bet — match the house and roll">Bet</button>
