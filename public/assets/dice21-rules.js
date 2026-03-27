@@ -9,6 +9,13 @@
  * Load order: include before `main-BosaNfoM.js` / tournaments
  * (see `dice-21/index.html`).
  *
+ * **Hand / round state** (main bundle variable `i`): `idle` — before the first
+ * deal; `play` — player’s turn; `ai` — house is resolving; `ended` — the hand
+ * is over (last totals stay on screen until the next deal). A new deal is
+ * allowed from `idle` or `ended` only when double-or-nothing is not pending
+ * (`db` is 0). `idle` and `ended` both mean “not mid-hand,” but `ended` keeps
+ * the board readable between deals; `idle` is the initial table state.
+ *
  * Copyright © Whittfield Holmes. All rights reserved.
  */
 ;(function () {
@@ -24,38 +31,40 @@
   /** Four tables — edit freely */
   const tables = [
     {
-      startBank: 100,
-      minBet: 5,
+      startBank: 1500,
+      minBet: 50,
       winsToUnlock: 10,
-      maxBetAfter: 10,
-      advanceBank: 200,
+      maxBetAfter: 100,
+      advanceBank: 15000,
     },
     {
-      startBank: 2500,
-      minBet: 10,
-      winsToUnlock: 10,
-      maxBetAfter: 25,
-      advanceBank: 10000,
-    },
-    {
-      startBank: 25000,
+      startBank: 3500,
       minBet: 100,
       winsToUnlock: 10,
       maxBetAfter: 250,
-      advanceBank: 100000,
+      advanceBank: 35000,
     },
     {
-      startBank: 500000,
+      startBank: 30000,
       minBet: 1000,
       winsToUnlock: 10,
-      maxBetAfter: 5000,
-      advanceBank: 5000000,
-      /** After unlock, allow these denominations (includes min and high chips). */
-      denomsAfter: [1000, 5000],
+      maxBetAfter: 2500,
+      advanceBank: 300000,
+    },
+    {
+      startBank: 300000,
+      minBet: 10000,
+      winsToUnlock: 10,
+      maxBetAfter: 25000,
+      advanceBank: 3000000,
+      /** After unlock, only these two denominations (high roller). */
+      denomsAfter: [10000, 25000],
     },
   ]
 
-  const LADDER = Object.freeze([1, 5, 10, 25, 100, 250, 500, 1000, 5000])
+  const LADDER = Object.freeze([
+    1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000,
+  ])
 
   function tableAt(i) {
     const n = i | 0
@@ -103,18 +112,18 @@
 
   /** Career tournaments — `minTable` = zero-based table index required to enter. */
   const tournaments = [
-    { id: 1, name: 'Club Classic', prize: 'Big-screen TV', minTable: 0, minHands: 12, minWon: 50 },
-    { id: 2, name: 'Skyline Open', prize: 'Laptop & gear', minTable: 0, minHands: 28, minWon: 500 },
-    { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', minTable: 1, minHands: 55, minWon: 2200 },
-    { id: 4, name: 'Elite Showcase', prize: 'Sports car weekend', minTable: 1, minHands: 90, minWon: 4800 },
-    { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', minTable: 2, minHands: 125, minWon: 8000 },
-    { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', minTable: 3, minHands: 180, minWon: 25000 },
+    { id: 1, name: 'Club Classic', prize: 'Big-screen TV', minTable: 0, minHands: 12, minWon: 500 },
+    { id: 2, name: 'Skyline Open', prize: 'Laptop & gear', minTable: 0, minHands: 28, minWon: 5000 },
+    { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', minTable: 1, minHands: 55, minWon: 15000 },
+    { id: 4, name: 'Elite Showcase', prize: 'Sports car weekend', minTable: 1, minHands: 90, minWon: 40000 },
+    { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', minTable: 2, minHands: 125, minWon: 100000 },
+    { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', minTable: 3, minHands: 180, minWon: 300000 },
   ]
 
   const tournamentWinsToClinch = 2
 
   window.__d21Rules = {
-    version: 2,
+    version: 3,
     tables,
     tournaments,
     tournamentWinsToClinch,
@@ -138,7 +147,7 @@
       const w1 = window.__d21GameWinsPhase1 | 0
       return maxBetFor(ti, w1)
     }
-    return 5
+    return 50
   }
 
   window.__d21RulesStakeProgressPaths = function () {

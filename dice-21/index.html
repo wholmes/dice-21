@@ -539,6 +539,9 @@
         h1 {
           font-size: 15px;
         }
+        #feltDock .felt-dock-title {
+          font-size: 15px;
+        }
       }
       #ui .panel {
         pointer-events: auto;
@@ -1149,6 +1152,10 @@
         background: linear-gradient(165deg, #f8f8f8, #d8d8d8);
         color: #1a1a1a;
       }
+      .chip-btn.chip-d50 {
+        background: linear-gradient(165deg, #c98a3a, #7a4a12);
+        color: #fff;
+      }
       .chip-btn.chip-d5 {
         background: linear-gradient(165deg, #e04555, #9a1830);
         color: #fff;
@@ -1182,6 +1189,19 @@
         background: linear-gradient(165deg, #e8e4f0, #6a6078);
         color: #121018;
         border-color: rgba(255, 255, 255, 0.2);
+      }
+      .chip-btn.chip-d2500 {
+        background: linear-gradient(165deg, #2a8a8a, #0d4040);
+        color: #e8ffff;
+      }
+      .chip-btn.chip-d10000 {
+        background: linear-gradient(165deg, #ffd54a, #b8860b);
+        color: #1a1204;
+      }
+      .chip-btn.chip-d25000 {
+        background: linear-gradient(165deg, #6a5a78, #2a2030);
+        color: #f0ecf8;
+        font-size: 9px;
       }
       #betHud {
         font-size: 10px;
@@ -1420,18 +1440,27 @@
         font-weight: 700;
         letter-spacing: 0.04em;
       }
-      /* Title + toggle on one row; body only when open (no empty strip when closed) */
-      .panel-title-row {
+      /* Bankroll + help toggle share one row; rules open below */
+      .panel-bankroll-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
-        margin: 0 0 6px;
+        gap: 10px;
+        margin: 8px 0 0;
       }
-      .panel-title-row h1 {
+      .panel-bankroll-line {
         margin: 0;
         flex: 1;
         min-width: 0;
+      }
+      #feltDock .felt-dock-title {
+        margin: 0 0 4px;
+        width: 100%;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: #e8ecf4;
+        text-align: right;
         line-height: 1.2;
       }
       #panelHelpToggle {
@@ -1454,7 +1483,7 @@
         filter: brightness(1.08);
       }
       #panelHelpBody {
-        margin: 0 0 10px;
+        margin: 8px 0 10px;
         padding: 10px;
         border-radius: 8px;
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2872,20 +2901,24 @@
         role="group"
         aria-label="Bet size in dollars"
       >
-        <button type="button" class="chip-btn chip-d5" data-denom="5" aria-pressed="true">$5</button>
-        <button type="button" class="chip-btn chip-d10" data-denom="10" aria-pressed="false">$10</button>
-        <button type="button" class="chip-btn chip-d1" data-denom="1" aria-pressed="false">$1</button>
-        <button type="button" class="chip-btn chip-d25" data-denom="25" aria-pressed="false">$25</button>
-        <button type="button" class="chip-btn chip-d100" data-denom="100" aria-pressed="false">$100</button>
+        <button type="button" class="chip-btn chip-d50" data-denom="50" aria-pressed="true">$50</button>
+        <button type="button" class="chip-btn chip-d5" data-denom="5" aria-pressed="false" hidden>$5</button>
+        <button type="button" class="chip-btn chip-d10" data-denom="10" aria-pressed="false" hidden>$10</button>
+        <button type="button" class="chip-btn chip-d1" data-denom="1" aria-pressed="false" hidden>$1</button>
+        <button type="button" class="chip-btn chip-d25" data-denom="25" aria-pressed="false" hidden>$25</button>
+        <button type="button" class="chip-btn chip-d100" data-denom="100" aria-pressed="false" hidden>$100</button>
         <button type="button" class="chip-btn chip-d500" data-denom="500" aria-pressed="false" hidden>$500</button>
         <button type="button" class="chip-btn chip-d1000" data-denom="1000" aria-pressed="false" hidden>$1000</button>
         <button type="button" class="chip-btn chip-d250" data-denom="250" aria-pressed="false" hidden>$250</button>
+        <button type="button" class="chip-btn chip-d2500" data-denom="2500" aria-pressed="false" hidden>$2.5k</button>
         <button type="button" class="chip-btn chip-d5000" data-denom="5000" aria-pressed="false" hidden>$5k</button>
+        <button type="button" class="chip-btn chip-d10000" data-denom="10000" aria-pressed="false" hidden>$10k</button>
+        <button type="button" class="chip-btn chip-d25000" data-denom="25000" aria-pressed="false" hidden>$25k</button>
       </div>
-      <p id="betHud" class="label-muted">Bet $5 · next pot $10</p>
+      <p id="betHud" class="label-muted">Bet $50 · next pot $100</p>
       <div class="d21-stake-meter" id="d21StakeMeter">
         <div class="d21-stake-meter-head">
-          <span class="d21-stake-meter-label" id="d21StakeMeterLabel">Next unlock: $10 max bet</span>
+          <span class="d21-stake-meter-label" id="d21StakeMeterLabel">Next unlock: $100 max bet</span>
           <span class="d21-stake-meter-pct" id="d21StakeMeterPct" aria-hidden="true">0%</span>
         </div>
         <div
@@ -2916,6 +2949,7 @@
       </div>
     </div>
     <div id="feltDock">
+      <p class="felt-dock-title">Dice 21</p>
       <!-- Felt swatches hidden: default felt is fixed; stake tier only unlocks higher bet limits + bankroll scale. -->
       <div class="felt-picker-section" hidden>
         <p class="bet-dock-label">Felt</p>
@@ -2984,8 +3018,15 @@
         <button type="button" class="mqa-btn" id="mqaMore">More</button>
       </nav>
       <div class="panel">
-        <div class="panel-title-row">
-          <h1>Dice 21</h1>
+        <div class="row totals">
+          <span>You <strong id="playerTotal">—</strong></span>
+          <span>Pot <strong id="potVal">0</strong></span>
+          <span>House <strong id="aiTotal">—</strong></span>
+        </div>
+        <div class="panel-bankroll-row">
+          <p class="label-muted panel-bankroll-line">
+            Bankroll ($) — you <strong id="chipsYou">100</strong> · house <strong id="chipsAi">100</strong>
+          </p>
           <button
             type="button"
             id="panelHelpToggle"
@@ -3003,14 +3044,6 @@
           </p>
           <p id="message"></p>
         </div>
-        <div class="row totals">
-          <span>You <strong id="playerTotal">—</strong></span>
-          <span>Pot <strong id="potVal">0</strong></span>
-          <span>House <strong id="aiTotal">—</strong></span>
-        </div>
-        <p class="label-muted" style="margin: 8px 0 0">
-          Bankroll ($) — you <strong id="chipsYou">100</strong> · house <strong id="chipsAi">100</strong>
-        </p>
         <details class="lifetime-details" id="lifeDetails">
           <summary><span class="label-muted">Lifetime</span> <span id="lifeSummary">net +0 · 0 hands</span></summary>
           <div class="lifetime-body">
