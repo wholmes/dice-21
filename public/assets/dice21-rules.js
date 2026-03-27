@@ -2,9 +2,11 @@
  * Dice 21 — tunable game rules (single source of truth for balance).
  *
  * Progression is **table-based** (see `tables`): each table has a starting bank,
- * a minimum bet until you hit `winsToUnlock` wins, then higher `maxBetAfter`
- * on the **same** felt. When the **house bank hits $0**, you move to the
- * next table (new bank, new limits). Tweak numbers here and refresh.
+ * a minimum bet until you **unlock** higher `maxBetAfter` on the **same** felt.
+ * Unlock when **either**:
+ *   • **Wins ≥ `stakeUnlockWins`** (wins at min bet while restricted), **or**
+ *   • **Bank ≥ `stakeBankMult` × `maxBetAfter`** (player stack).
+ * When the **house bank hits $0**, you move to the next table (new bank, new limits).
  *
  * Load order: include before `main-BosaNfoM.js` / tournaments
  * (see `dice-21/index.html`).
@@ -19,12 +21,17 @@
  * Copyright © Whittfield Holmes. All rights reserved.
  */
 ;(function () {
+  /** Wins at min bet (while restricted) that unlock higher limits. */
+  const STAKE_UNLOCK_WINS = 6
+  /** Player bank must be ≥ this multiple of `maxBetAfter` to unlock without 6 wins. */
+  const STAKE_BANK_MULT = 2
+
   /**
    * @typedef {object} TableRule
    * @property {number} startBank — Starting chips each side (player D / house R) when you sit at this table.
-   * @property {number} minBet — Only this denomination until `winsToUnlock` player wins at this table.
-   * @property {number} winsToUnlock — Player wins needed (while on min bet) to unlock `maxBetAfter`.
-   * @property {number} maxBetAfter — Highest chip / max bet after the win gate (same table).
+   * @property {number} minBet — Only this denomination until stake tier unlocks.
+   * @property {number} winsToUnlock — Doc / meter: aligns with `stakeUnlockWins` (win path).
+   * @property {number} maxBetAfter — Highest chip / max bet after unlock (same table).
    * @property {number} advanceBank — Legacy scale for session **soft cap** math only; promotion uses **house bank $0** (see main bundle `d21AdvanceTableIfNeeded`).
    */
 
@@ -33,28 +40,28 @@
     {
       startBank: 1500,
       minBet: 50,
-      winsToUnlock: 10,
+      winsToUnlock: STAKE_UNLOCK_WINS,
       maxBetAfter: 100,
       advanceBank: 15000,
     },
     {
       startBank: 3500,
       minBet: 100,
-      winsToUnlock: 10,
+      winsToUnlock: STAKE_UNLOCK_WINS,
       maxBetAfter: 250,
       advanceBank: 35000,
     },
     {
       startBank: 30000,
       minBet: 1000,
-      winsToUnlock: 10,
+      winsToUnlock: STAKE_UNLOCK_WINS,
       maxBetAfter: 2500,
       advanceBank: 300000,
     },
     {
       startBank: 300000,
       minBet: 10000,
-      winsToUnlock: 10,
+      winsToUnlock: STAKE_UNLOCK_WINS,
       maxBetAfter: 25000,
       advanceBank: 3000000,
       /** After unlock, only these two denominations (high roller). */
@@ -72,29 +79,37 @@
     return tables[n]
   }
 
-  /**
-   * Whether the player is still on “minimum bet only” for this table.
-   */
-  function isRestricted(tIdx, winsPhase1) {
+  function stakeTierUnlocked(tIdx, winsPhase1, playerBank) {
     const T = tableAt(tIdx)
     const w = winsPhase1 | 0
-    return w < T.winsToUnlock
+    const bank = playerBank == null || playerBank === undefined ? 0 : +playerBank
+    if (w >= STAKE_UNLOCK_WINS) return true
+    if (bank >= STAKE_BANK_MULT * T.maxBetAfter) return true
+    return false
+  }
+
+  /**
+   * Whether the player is still on “minimum bet only” for this table.
+   * @param {number} [playerBank] — Player stack; omit or 0 to ignore bank path.
+   */
+  function isRestricted(tIdx, winsPhase1, playerBank) {
+    return !stakeTierUnlocked(tIdx, winsPhase1, playerBank)
   }
 
   /**
    * Max bet (chip value) allowed **right now** for this table + progress.
    */
-  function maxBetFor(tIdx, winsPhase1) {
+  function maxBetFor(tIdx, winsPhase1, playerBank) {
     const T = tableAt(tIdx)
-    return isRestricted(tIdx, winsPhase1) ? T.minBet : T.maxBetAfter
+    return isRestricted(tIdx, winsPhase1, playerBank) ? T.minBet : T.maxBetAfter
   }
 
   /**
    * Chip denominations available for betting at this table + progress.
    */
-  function chipDenomsFor(tIdx, winsPhase1) {
+  function chipDenomsFor(tIdx, winsPhase1, playerBank) {
     const T = tableAt(tIdx)
-    if (isRestricted(tIdx, winsPhase1)) return [T.minBet]
+    if (isRestricted(tIdx, winsPhase1, playerBank)) return [T.minBet]
     if (Array.isArray(T.denomsAfter) && T.denomsAfter.length) {
       return T.denomsAfter.slice().sort((a, b) => a - b)
     }
@@ -123,11 +138,13 @@
   const tournamentWinsToClinch = 2
 
   window.__d21Rules = {
-    version: 3,
+    version: 4,
     tables,
     tournaments,
     tournamentWinsToClinch,
     ladder: LADDER,
+    stakeUnlockWins: STAKE_UNLOCK_WINS,
+    stakeBankMult: STAKE_BANK_MULT,
   }
 
   window.__d21RulesTableAt = tableAt
@@ -145,7 +162,9 @@
     if (typeof window.__d21GameTableIndex === 'number') {
       const ti = window.__d21GameTableIndex | 0
       const w1 = window.__d21GameWinsPhase1 | 0
-      return maxBetFor(ti, w1)
+      const bank =
+        typeof window.__d21GamePlayerBank === 'number' ? window.__d21GamePlayerBank : 0
+      return maxBetFor(ti, w1, bank)
     }
     return 50
   }

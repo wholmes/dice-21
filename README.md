@@ -23,7 +23,7 @@ A new deal is allowed from **`idle`** or **`ended`** only when **double-or-nothi
 
 ### One round
 
-1. **Pick a chip** (denominations depend on **career table** + unlocks; the first career table uses **$50**, then **$50 + $100** after enough wins at min bet—see **`dice21-rules.js`**) and press **Bet** (or the main bet control). You and the house each put that amount in; the **pot** is both antes combined (e.g. a **$50** bet ⇒ **$100** in the pot before dice).
+1. **Pick a chip** (denominations depend on **career table** + unlocks; the first career table uses **$50**, then higher chips after you **unlock** that table’s upper limit—**6** wins at min bet **or** player bank **≥ 2×** that table’s **`maxBetAfter`**—see **`dice21-rules.js`**) and press **Bet** (or the main bet control). You and the house each put that amount in; the **pot** is both antes combined (e.g. a **$50** bet ⇒ **$100** in the pot before dice).
 2. You get a **two-dice roll** to start. Your total shows in the panel.
 3. **Hit** to roll more dice, or **Stand** to lock your total and send play to the house.
 4. **Hitting:** If your total is **under 14**, your next hit uses **two dice** at once. At **14 or more**, each hit is **one die** only—so high totals get riskier.
@@ -92,18 +92,22 @@ Changing mode asks for **confirmation** first (dealer rules and Fortune payouts 
 
 | Export / global | Role |
 |-----------------|------|
-| **`window.__d21Rules`** | `{ version, tables, tournaments, tournamentWinsToClinch, ladder }` — authoritative numbers for career tables, chip ladder, and tournaments. |
+| **`window.__d21Rules`** | `{ version, tables, tournaments, tournamentWinsToClinch, ladder, stakeUnlockWins, stakeBankMult }` — authoritative numbers for career tables, chip ladder, tournaments, and stake-unlock tuning. |
 | **`window.__d21RulesTableAt(i)`** | Returns the **`tables[i]`** rule object (clamped). |
-| **`window.__d21RulesMaxBetFor(ti, w1)`** | Max bet allowed for table index **`ti`** and **phase-1 win count** **`w1`** (wins while on min bet at that table). |
-| **`window.__d21RulesChipDenomsFor(ti, w1)`** | Chip denominations available for betting (min bet only until **`winsToUnlock`**, then either a **`ladder`** slice or **`denomsAfter`** on a table). |
-| **`window.__d21RulesIsRestricted(ti, w1)`** | `true` while **`w1` < winsToUnlock** (min bet only). |
+| **`window.__d21RulesMaxBetFor(ti, w1, bank?)`** | Max bet for table **`ti`**, phase-1 win count **`w1`**, and optional player stack **`bank`** (defaults to **`0`** if omitted). Uses the **stake tier unlock** rule below. |
+| **`window.__d21RulesChipDenomsFor(ti, w1, bank?)`** | Chip denominations (min bet only until unlocked, then **`ladder`** slice or **`denomsAfter`**). |
+| **`window.__d21RulesIsRestricted(ti, w1, bank?)`** | `true` while still on **min bet only** — i.e. neither unlock condition is met (see **Stake tier unlock** below). |
 | **`window.__d21RulesBankSoftCap(ti)`** | Upper bound used when **restoring** stacks from **`dice21_table_session_v1`**. |
-| **`window.__d21RulesStakeTierMax(h, w)`** | Name kept for compatibility with older call sites; **ignores** `h` and `w`. Returns **`maxBetFor`** for the current game (`window.__d21GameTableIndex`, `window.__d21GameWinsPhase1`) when set; otherwise **`50`**. Used for badges and theming keyed off numeric max bet. |
-| **`window.__d21RulesStakeProgressPaths()`** | Always returns **`[]`**. Stake **meter** / **hint** are implemented in the main bundle (win gate + house bank), not via this hook. |
+| **`window.__d21RulesStakeTierMax(h, w)`** | Name kept for compatibility; **ignores** `h` and `w`. Returns **`maxBetFor`** using **`window.__d21GameTableIndex`**, **`window.__d21GameWinsPhase1`**, and **`window.__d21GamePlayerBank`** when set; otherwise **`50`**. Used for badges and theming keyed off numeric max bet. |
+| **`window.__d21RulesStakeProgressPaths()`** | Always returns **`[]`**. Stake **meter** / **hint** are implemented in the main bundle (stake unlock progress + house bank toward next table), not via this hook. |
 
 ### Semantics (important)
 
-- **`tables`** — Each row: **`startBank`**, **`minBet`**, **`winsToUnlock`**, **`maxBetAfter`**, **`advanceBank`** (soft-cap scaling only), and optionally **`denomsAfter`** (e.g. last table: only **`$10,000`** and **`$25,000`** chips after the win gate).
+- **Stake tier unlock (same table, higher `maxBetAfter`)** — You leave **min bet only** when **either**:
+  - **`w1` ≥ `stakeUnlockWins`** (default **6**) — player wins counted while restricted (phase-1 wins at min bet), **or**
+  - **Player bank ≥ `stakeBankMult` × `maxBetAfter`** (defaults: **2×** that row’s **`maxBetAfter`**).
+  Constants **`stakeUnlockWins`** and **`stakeBankMult`** live on **`window.__d21Rules`**; the main bundle passes **`D`** into rules as **`window.__d21GamePlayerBank`** (synced in **`d21SyncGameGlobals()`**). Table field **`winsToUnlock`** matches **`stakeUnlockWins`** for docs, URL caps, and copy.
+- **`tables`** — Each row: **`startBank`**, **`minBet`**, **`winsToUnlock`**, **`maxBetAfter`**, **`advanceBank`** (soft-cap scaling only), and optionally **`denomsAfter`** (e.g. last table: only **`$10,000`** and **`$25,000`** chips after unlock).
 - **`ladder`** — Ordered denominations used when **`denomsAfter`** is absent: **`chipDenomsFor`** slices **`window.__d21Rules.ladder`** from **`minBet`** through **`maxBetAfter`** (inclusive).
 - **`tournaments`** — Six objects: `id`, `name`, `prize`, **`minTable`** (zero-based career table index required), **`minHands`**, **`minWon`** (lifetime stats). See **[Career tournaments](#dice-21--career-tournaments)**.
 - **`tournamentWinsToClinch`** — Wins needed to win a tournament series (default **2**, “first to 2”).
@@ -112,7 +116,7 @@ If **`dice21-rules.js`** fails to load, the main bundle still runs with fallback
 
 ### Keeping copy in sync
 
-The **stake help** modal in **`dice-21/index.html`** explains **table-based** limits (not read from rules at runtime—edit both when copy should track **`dice21-rules.js`**).
+The **stake help** modal in **`dice-21/index.html`** explains **table-based** limits (not read from rules at runtime—edit both when copy should track **`dice21-rules.js`**, including the **6 wins / 2× bank** unlock summary).
 
 ---
 
@@ -122,25 +126,25 @@ Authoritative numbers are in **`public/assets/dice21-rules.js`**. If this sectio
 
 ### Career table ladder (`tables` in `dice21-rules.js`)
 
-Each **career table** row defines **`startBank`** (starting chips **each side** — player **`D`** / house **`R`**), **`minBet`** (only that chip until the gate), **`winsToUnlock`** (player wins **while on min bet** at this table), then **`maxBetAfter`** on the **same** felt. Optional **`denomsAfter`** replaces the default **`ladder`** slice (used on the last table so only **$10,000** and **$25,000** appear after unlock).
+Each **career table** row defines **`startBank`** (starting chips **each side** — player **`D`** / house **`R`**), **`minBet`** (only that chip until unlock), **`winsToUnlock`** (aligned with **`stakeUnlockWins`**, usually **6**), then **`maxBetAfter`** on the **same** felt. Optional **`denomsAfter`** replaces the default **`ladder`** slice (used on the last table so only **$10,000** and **$25,000** appear after unlock).
 
-- **Win gate:** While **`w1` < winsToUnlock**, you may bet only **`minBet`**. After enough wins at min bet, **`chipDenomsFor`** exposes the allowed higher denominations (from **`ladder`** or **`denomsAfter`**).
+- **Stake gate:** Until unlock, you may bet only **`minBet`**. Unlock by **6** wins at min bet (while restricted) **or** by reaching **bank ≥ 2× `maxBetAfter`**. Then **`chipDenomsFor`** exposes the allowed higher denominations (from **`ladder`** or **`denomsAfter`**).
 - **Promotion:** You move to the **next** career table when the **house bank hits $0** after a resolved hand (`d21AdvanceTableIfNeeded`). **`advanceBank`** is **not** the promotion trigger—it only feeds **`bankSoftCap`** for session restore clamping.
 - **Last table:** When the house bank hits **$0**, there is no next table—the **house** refills to **`startBank`**, **HOUSE BUSTED** toast, you keep your chips. Earlier tables show **NEXT TABLE** when the house hits **$0**.
 
-| Table (index) | Min bet until gate | After unlock (chips / max) | `startBank` (each side) | `winsToUnlock` |
-|---------------|--------------------|----------------------------|--------------------------:|---------------:|
-| 0 | $50 | $50–$100 (ladder slice) | $1,500 | 10 |
-| 1 | $100 | $100–$250 | $3,500 | 10 |
-| 2 | $1,000 | $1,000–$2,500 | $30,000 | 10 |
-| 3 | $10,000 | **$10,000 + $25,000 only** (`denomsAfter`) | $300,000 | 10 |
+| Table (index) | Min bet until unlock | After unlock (chips / max) | `startBank` (each side) | `winsToUnlock` |
+|---------------|----------------------|----------------------------|--------------------------:|---------------:|
+| 0 | $50 | $50–$100 (ladder slice) | $1,500 | 6 |
+| 1 | $100 | $100–$250 | $3,500 | 6 |
+| 2 | $1,000 | $1,000–$2,500 | $30,000 | 6 |
+| 3 | $10,000 | **$10,000 + $25,000 only** (`denomsAfter`) | $300,000 | 6 |
 
 **Felt / theme** follows **table index** (`d21ApplyTableTheme`).
 
 ### In-session stake UI (main bundle)
 
-- **Stake hint** (`#d21StakeHint`) and **stake meter** describe **(a)** wins remaining at min bet, **(b)** house bank toward busting them, or **(c)** “final table” — not lifetime grind tables.
-- **Max bet** during play is **`maxBetFor(ti, w1)`** from rules (or **`previewStakes`** URL override — see [URL parameters](#dice-21--url-query-parameters)).
+- **Stake hint** (`#d21StakeHint`) and **stake meter** describe **(a)** progress toward unlock (**wins** and/or **bank** vs **2× maxBetAfter**), **(b)** house bank toward busting them, or **(c)** “final table” — not lifetime grind tables.
+- **Max bet** during play is **`maxBetFor(ti, w1, D)`** from rules (or **`previewStakes`** URL override — see [URL parameters](#dice-21--url-query-parameters)).
 - **Chip dock** — Buttons use **`data-denom`**; the main bundle shows or hides each denomination according to **`chipDenomsFor`**, and tints 3D chips by value.
 - **Stakes-up modal** — May appear when your effective max bet **increases** (e.g. crossing the win gate on a table), separate from tournament prizes.
 
@@ -151,7 +155,7 @@ Each **career table** row defines **`startBank`** (starting chips **each side** 
 
 ### Historical (removed) — lifetime “stake tier” ladder
 
-Older docs and UI sometimes described unlocking **$5 / $25 / $100** max bet from **lifetime** hands + pot won, with “standard” and “hot” threshold tables. **That ladder is not implemented** in the current main bundle: chip limits come only from **`tables`** + **`winsToUnlock`** (+ **`denomsAfter`**). Do not copy old tier tables into this README as if they were authoritative.
+Older docs and UI sometimes described unlocking **$5 / $25 / $100** max bet from **lifetime** hands + pot won, with “standard” and “hot” threshold tables. **That ladder is not implemented** in the current main bundle: chip limits come from **`tables`**, the **stake tier unlock** rule (**`stakeUnlockWins`** / **`stakeBankMult`** on **`__d21Rules`**), and **`denomsAfter`**. Do not copy old tier tables into this README as if they were authoritative.
 
 **Overlap to be aware of:** **Tournament 1** ([Club Classic](#dice-21--career-tournaments)) uses **`minHands: 12`** and **`minWon: 500`** — gate thresholds are **independent** of per-table min/max bet (`tables`); they only control tournament entry.
 
@@ -159,7 +163,7 @@ Older docs and UI sometimes described unlocking **$5 / $25 / $100** max bet from
 
 ### Table bankroll persistence (sessions)
 
-Current **table** chips (`D` / `R`), selected chip **`g`**, **table index** **`ti`**, and **phase-1 win count** **`w1`** are saved to **`localStorage`** as **`dice21_table_session_v1`** (prefer **`v: 2`** with **`ti`**, **`w1`**, **`D`**, **`R`**, **`g`**; older **`v: 1`** stored **`D`**, **`R`**, **`g`** only — missing **`ti`** / **`w1`** defaults are applied on load). On load, stacks are **capped** by **`bankSoftCap(ti)`** in `dice21-rules.js`.
+Current **table** chips (`D` / `R`), selected chip **`g`**, **table index** **`ti`**, and **phase-1 win count** **`w1`** are saved to **`localStorage`** as **`dice21_table_session_v1`** (prefer **`v: 2`** with **`ti`**, **`w1`**, **`D`**, **`R`**, **`g`**; older **`v: 1`** stored **`D`**, **`R`**, **`g`** only — missing **`ti`** / **`w1`** defaults are applied on load). On load, stacks are **capped** by **`bankSoftCap(ti)`** in `dice21-rules.js`. After load, **`d21SyncGameGlobals()`** sets **`window.__d21GamePlayerBank`** from **`D`** so **`maxBetFor`** / **`isRestricted`** match session state.
 
 **Starting stacks** for a table come from **`d21BankrollBase()`** in the main bundle: each side gets that table’s **`startBank`** when rules load (fallback **`100 × maxBet`** only if rules are missing).
 
@@ -175,7 +179,7 @@ Optional **best-of series** mini-events (fantasy prizes only). Implemented in **
 
 - **Real bankroll** — You play normal hands with your table chips; no separate “entry fee” currency.
 - **Lifetime still counts** — Hands and **`lsW`** update exactly like outside a tournament.
-- **Gates** — Each event requires a **minimum career table** (`minTable`: **0**–**3**), **minimum lifetime hands** (`lsH`), and **minimum lifetime $ won** (`lsW`). These thresholds are independent of the per-table win gate (`winsToUnlock`).
+- **Gates** — Each event requires a **minimum career table** (`minTable`: **0**–**3**), **minimum lifetime hands** (`lsH`), and **minimum lifetime $ won** (`lsW`). These thresholds are independent of the per-table **stake tier unlock** (wins / bank toward **`maxBetAfter`**).
 - **Order** — Events **1 → 6** must be **cleared in order**; event **1** has no prerequisite.
 - **Series** — **First to `tournamentWinsToClinch` wins** (default **2**). **Pushes** do not move the series.
 - **Double-or-nothing** — **Off** while a series is active (and the double `db` state is not set on wins during a series).
@@ -284,7 +288,7 @@ Query parameters are read from **`/dice-21/`** (and the same path on your dev ho
 |-----------|--------|---------|--------|
 | **`previewStakes`** | `1`, `5`, `25`, `100`, or **empty** | Main game bundle | **Preview max bet** for this load only (dev subset — not every chip value exists in this list). Overrides **`d21StakeTierMax()`**–driven bankroll/hints; felt stays default. Does **not** change lifetime stats. Invalid number → **`5`**. Empty → **`5`**. Does **not** apply career **`tables`**—use **`d21Table`** / **`d21Phase1`** (or **`jumpTable`**) to test ladder rows. |
 | **`d21Table`** | `0` … `tables.length − 1` (integer, **0-based**) | Main bundle | **Testing:** jump to a **career table** from **`dice21-rules.js`** `tables`. Resets **both** stacks to that table’s **`startBank`**, applies felt by table index, and **removes** `dice21_table_session_v1` for this load. **Omitted** = normal load from saved session / defaults. |
-| **`d21Phase1`** | `0` … `winsToUnlock` (integer) | Main bundle | **Testing:** only with **`d21Table`**. Sets how many **player wins while on min bet** to simulate (capped per table). **`0`** = still restricted to min bet. **`10`** (when `winsToUnlock` is **10**) = **unlocked** higher limits on that table. **Omitted** → **`0`**. |
+| **`d21Phase1`** | `0` … `winsToUnlock` (integer) | Main bundle | **Testing:** only with **`d21Table`**. Sets how many **player wins while on min bet** to simulate (capped per table). **`0`** = still restricted to min bet unless your **bank** alone would unlock (**≥ 2×** that table’s **`maxBetAfter`**). **`6`** (when `winsToUnlock` is **6**) = **unlocked** via wins on that table. **Omitted** → **`0`**. |
 | **`mode`** | `classic`, `sharp`, `chill`, `fortune` | Main bundle | Starting **dealer mode** for this load. Overrides `localStorage` `dice21_mode_v1` until you change mode in the UI (then the UI saves as usual). |
 | **`shakeHint`** | `0` or `1` | Main bundle | **`1`** = show shake overlay hints; **`0`** = hide. Overrides the saved `dice21_shake_hint_overlay` preference for this session until you toggle the checkbox. |
 | **`reducedMotion`** | `1` or `true` | Main bundle | Forces **reduced-motion** behavior (simpler rolls, no shake overlay path, etc.) as if `prefers-reduced-motion: reduce` were on. |
@@ -306,10 +310,10 @@ Query parameters are read from **`/dice-21/`** (and the same path on your dev ho
 
 ### Testing table progression (`d21Table` / `d21Phase1`)
 
-Use these to **skip ahead** in the **table-based** career ladder (banks, min bet until `winsToUnlock` wins, then higher chip limits on that felt; **promotion** in normal play is when the **house bank hits $0**) without grinding. They apply **after** `dice21-rules.js` loads.
+Use these to **skip ahead** in the **table-based** career ladder (banks, min bet until **stake unlock**, then higher chip limits on that felt; **promotion** in normal play is when the **house bank hits $0**) without grinding. They apply **after** `dice21-rules.js` loads.
 
 - **`d21Table`** — **0** = first table, **1** = second, … up to **`tables.length − 1`** (see **`public/assets/dice21-rules.js`**). Invalid or out-of-range values are **clamped**.
-- **`d21Phase1`** — Optional. Simulates **player wins at min bet** on that table (capped at that table’s **`winsToUnlock`**). To see **full chip rows** after the win gate (e.g. **$10,000** / **$25,000** on the last table), set this to **`winsToUnlock`** (often **`10`**). Omit or use **`0`** to stay on **min bet only**.
+- **`d21Phase1`** — Optional. Simulates **player wins at min bet** on that table (capped at that table’s **`winsToUnlock`**, usually **6**). To see **full chip rows** after unlock (e.g. **$10,000** / **$25,000** on the last table), set this to **`winsToUnlock`** (often **`6`**). Omit or use **`0`** to stay on **min bet only** (unless starting **`D`** from **`startBank`** already meets the **2× maxBetAfter** bank shortcut).
 
 **Console (no reload):** `window.__d21Dev.jumpTable(tableIndex, phase1Wins)` — same semantics; **`phase1Wins`** may be omitted (treated as **`0`**). Clears the saved table session and refreshes felt, chips, and meter.
 
@@ -328,7 +332,7 @@ Use these to **skip ahead** in the **table-based** career ladder (banks, min bet
 /dice-21/?diceShakeSfxOffsetMs=40&chipPushBigMin=14
 http://localhost:5173/dice-21/?previewStakes=1&mode=classic
 /dice-21/?d21Table=2
-/dice-21/?d21Table=3&d21Phase1=10
+/dice-21/?d21Table=3&d21Phase1=6
 ```
 
 ### Poker Dice
@@ -484,7 +488,7 @@ Multiplayer still needs **`mp-server`** (or equivalent) reachable where the clie
 - Game logic and 3D live in the Dice 21 **main chunk** under `public/assets/` (hashed name in some builds, e.g. `main-BosaNfoM.js`; the entry script `dice21-*.js` imports it).
 - **Table SFX** (impacts, shake loop, pot chip pushes, room ambience, cash register, win sting, etc.) live under **`public/audio/`**; see **[Dice 21 — audio assets (public/audio)](#dice-21--audio-assets-publicaudio)**.
 - **`npm run dj:manifest`** (see **`scripts/generate-dj-manifest.mjs`**) regenerates **`public/audio/dj/manifest.json`** before **`predev`** / **`prebuild`** so new DJ WAVs are picked up without hand-editing JSON.
-- **Bet limits** — `d21StakeTierMax()` → `__d21RulesMaxBetFor(d21TableIdx, d21WinsPhase1)` (or **`previewStakes`**). **`d21StakeHintText`** / **`d21StakeMeterUpdate`** reflect the **win gate** and **house bank**, not a lifetime **`lsH` / `lsW`** ladder.
+- **Bet limits** — `d21StakeTierMax()` → `__d21RulesMaxBetFor(d21TableIdx, d21WinsPhase1, D)` (or **`previewStakes`**). **`d21StakeHintText`** / **`d21StakeMeterUpdate`** reflect **stake unlock** (wins **or** bank) and **house bank** toward the next table, not a lifetime **`lsH` / `lsW`** ladder.
 - **Selected chip `g`** when no denomination fits the bank — **`te()`** clamps using the table’s **`minBet`** from **`__d21RulesTableAt(d21TableIdx)`** (not a hardcoded **$50**).
 - **URL query overrides** (`previewStakes`, `d21Table`, `d21Phase1`, `mode`, `shakeHint`, `reducedMotion`, `diceSfxMs`, `diceSfxHitAt`, `diceShakeSfxMs`, `diceShakeSfxOffsetMs`, `chipPushBigMin`, `roomAmbience`, `djAmbience`, `guest`, `wsPort` / `mpPort`) are documented in **[Dice 21 — URL query parameters](#dice-21--url-query-parameters)**.
 - **`window.__d21Dev`** exposes helpers such as **`previewStakesUp(n)`**, **`jumpTable(ti, w1)`** (test table ladder without URL reload), **`ambienceDj` / `ambienceRoom`**, and getters for quick tuning without URL flags.

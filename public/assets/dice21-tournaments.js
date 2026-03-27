@@ -112,6 +112,7 @@
     el.innerHTML = t + u
     el.hidden = false
     el.classList.add('is-visible')
+    if (typeof window.d21PlayPopupShowSfx === 'function') window.d21PlayPopupShowSfx()
     clearTimeout(showToast._t)
     showToast._t = setTimeout(() => {
       el.classList.remove('is-visible')
