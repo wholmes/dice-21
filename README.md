@@ -46,7 +46,7 @@ Rolls use a **3D table** view. When the table loads, two idle dice **drop** onto
 
 ### Badges & lifetime stats
 
-The panel tracks **lifetime** net, won, lost, and hands played. **Lifetime $ won** (`lsW`) is the running total of **pot payouts on your wins** (full pot each time)—used for the HUD, **achievements**, and **tournament gates** (`minWon`). It does **not** change your per-hand **max bet**; that comes from the **career table** rules (see below). Stats are stored in the browser (`localStorage`) unless you reset.
+The panel tracks **lifetime** net, won, lost, and hands played. **Lifetime $ won** (`lsW`) is the running total of **pot payouts on your wins** (full pot each time)—used for the HUD, **achievements**, and the **Career championship** tournament gate (`minWon`). **Table cups** use separate per-felt counters (hands and $ won on that table only). It does **not** change your per-hand **max bet**; that comes from the **career table** rules (see below). Stats are stored in the browser (`localStorage`) unless you reset.
 
 **Stake unlock badges (Club / Premium / Elite)** — These unlock when your **effective max bet** (`d21StakeTierMax()`) **increases** across real thresholds for the first time (not on every load): **$100** (Club), **$250** (Premium), **$2,500** (Elite). The first sync after a fresh session **baselines** the tracked max so clearing achievements does **not** instantly re-award these badges.
 
@@ -92,7 +92,7 @@ Changing mode asks for **confirmation** first (dealer rules and Fortune payouts 
 
 | Export / global | Role |
 |-----------------|------|
-| **`window.__d21Rules`** | `{ version, tables, tournaments, tournamentWinsToClinch, ladder, stakeUnlockWins, stakeBankMult }` — authoritative numbers for career tables, chip ladder, tournaments, and stake-unlock tuning. |
+| **`window.__d21Rules`** | `{ version, tables, tournamentLifetime, tournamentByTable, tournamentWinsToClinch, ladder, stakeUnlockWins, stakeBankMult }` — authoritative numbers for career tables, chip ladder, dual tournament tracks, and stake-unlock tuning. |
 | **`window.__d21RulesAdvanceAltMet(ti, bank, winsAtTable)`** | Returns **`true`** when that table’s optional **`advanceAltNetProfit`** + **`advanceAltPlayerWins`** thresholds are met (alternate promotion path; main bundle still requires house **`R` > 0** and not the last career table). |
 | **`window.__d21RulesStakeBankUnlockMin(ti)`** | Minimum player stack **`D`** needed to unlock higher limits via the **bank** path (without 6 wins): **`startBank` + `stakeBankMult` × `maxBetAfter`**. |
 | **`window.__d21RulesTableAt(i)`** | Returns the **`tables[i]`** rule object (clamped). |
@@ -111,10 +111,11 @@ Changing mode asks for **confirmation** first (dealer rules and Fortune payouts 
   Constants **`stakeUnlockWins`** and **`stakeBankMult`** live on **`window.__d21Rules`**; the main bundle passes **`D`** into rules as **`window.__d21GamePlayerBank`** (synced in **`d21SyncGameGlobals()`**). Table field **`winsToUnlock`** matches **`stakeUnlockWins`** for docs, URL caps, and copy.
 - **`tables`** — Each row: **`startBank`**, **`minBet`**, **`winsToUnlock`**, **`maxBetAfter`**, **`advanceBank`** (soft-cap scaling only), optional **`advanceAltNetProfit`** / **`advanceAltPlayerWins`** (alternate next-table path without busting the house), and optionally **`denomsAfter`** (e.g. last table: only **`$10,000`** and **`$25,000`** chips after unlock).
 - **`ladder`** — Ordered denominations used when **`denomsAfter`** is absent: **`chipDenomsFor`** slices **`window.__d21Rules.ladder`** from **`minBet`** through **`maxBetAfter`** (inclusive).
-- **`tournaments`** — Six objects: `id`, `name`, `prize`, **`minTable`** (zero-based career table index required), **`minHands`**, **`minWon`** (lifetime stats). See **[Career tournaments](#dice-21--career-tournaments)**.
+- **`tournamentLifetime`** — One object: `id`, `name`, `prize`, **`minHands`**, **`minWon`** (gates use **lifetime** `lsH` / `lsW` from **`dice21_lifetime_v1`**).
+- **`tournamentByTable`** — One object per career felt: **`tableIndex`** (0–3), `name`, `prize`, **`minHands`**, **`minWon`** (gates use hands and $ won **on that table only**, stored in **`dice21_tournament_state_v1`**).
 - **`tournamentWinsToClinch`** — Wins needed to win a tournament series (default **2**, “first to 2”).
 
-If **`dice21-rules.js`** fails to load, the main bundle still runs with fallbacks for chip lists; **`dice21-tournaments.js`** embeds a **default** tournament list matching the shipped **`dice21-rules.js`**.
+If **`dice21-rules.js`** fails to load, the main bundle still runs with fallbacks for chip lists; **`dice21-tournaments.js`** embeds **default** `tournamentLifetime` / `tournamentByTable` objects matching the shipped rules file.
 
 ### Keeping copy in sync
 
@@ -152,16 +153,16 @@ Each **career table** row defines **`startBank`** (starting chips **each side** 
 
 ### Lifetime stats vs table limits
 
-- **`lsH`** / **`lsW`** (lifetime hands and lifetime pot won) power the **HUD**, **achievements**, and **[tournament](#dice-21--career-tournaments) gates** (`minHands`, `minWon`). They do **not** raise on-table max bet in the shipped build.
+- **`lsH`** / **`lsW`** (lifetime hands and lifetime pot won) power the **HUD**, **achievements**, and the **Career championship** gate. **Table cup** gates use per-table stats (see **[Career tournaments](#dice-21--career-tournaments)**). Neither raises on-table max bet in the shipped build.
 - **Club / Premium / Elite** badges fire when the **effective max bet** (`d21StakeTierMax()`) **increases** across **≥ $100**, **≥ $250**, and **≥ $2,500** respectively (see **[Badges & lifetime stats](#badges--lifetime-stats)**).
 
 ### Historical (removed) — lifetime “stake tier” ladder
 
 Older docs and UI sometimes described unlocking **$5 / $25 / $100** max bet from **lifetime** hands + pot won, with “standard” and “hot” threshold tables. **That ladder is not implemented** in the current main bundle: chip limits come from **`tables`**, the **stake tier unlock** rule (**`stakeUnlockWins`** / **`stakeBankMult`** on **`__d21Rules`**), and **`denomsAfter`**. Do not copy old tier tables into this README as if they were authoritative.
 
-**Overlap to be aware of:** **Tournament 1** ([Club Classic](#dice-21--career-tournaments)) uses **`minHands: 12`** and **`minWon: 500`** — gate thresholds are **independent** of per-table min/max bet (`tables`); they only control tournament entry.
+**Overlap to be aware of:** Tournament **gates** (lifetime and per-table) are **independent** of per-table min/max bet (`tables`); they only control **optional** tournament entry.
 
-**Where lifetime stats matter today:** HUD, achievements (separate numeric checks in the bundle), and **tournament** gates — see the **`tournaments`** table in **`dice21-rules.js`**.
+**Where stats matter:** HUD and achievements use lifetime counters; **Career championship** uses **`lsH` / `lsW`**; **table cups** use **`dice21_tournament_state_v1`** per felt — see **`dice21-rules.js`** (`tournamentLifetime`, `tournamentByTable`).
 
 ### Table bankroll persistence (sessions)
 
@@ -175,34 +176,68 @@ Current **table** chips (`D` / `R`), selected chip **`g`**, **table index** **`t
 
 ## Dice 21 — career tournaments
 
-Optional **best-of series** mini-events (fantasy prizes only). Implemented in **`public/assets/dice21-tournaments.js`**, with **gates** and **series length** defined in **`public/assets/dice21-rules.js`** (`tournaments`, `tournamentWinsToClinch`).
+Optional **best-of series** mini-events (fantasy prizes only). Implemented in **`public/assets/dice21-tournaments.js`**, with **gates** and **series length** in **`public/assets/dice21-rules.js`** (`tournamentLifetime`, `tournamentByTable`, `tournamentWinsToClinch`).
+
+### Two tracks (5 events total)
+
+1. **Career championship** — **One** lifetime event (`tournamentLifetime`). Gates use **lifetime** hands and **lifetime** $ won (`dice21_lifetime_v1`: **`hands`**, **`won`**).
+2. **Table cups** — **One cup per career felt** (`tournamentByTable`, four rows for table indices **0–3**). Gates use **hands played on that table** and **$ won on that table** only (accumulated in **`dice21_tournament_state_v1`**; counts persist if you leave and return).
+
+There is **no** order requirement between cups—you can clear them in any order. The panel shows **`cleared / 5`** (one lifetime + four tables).
 
 ### Design choices
 
 - **Real bankroll** — You play normal hands with your table chips; no separate “entry fee” currency.
-- **Lifetime still counts** — Hands and **`lsW`** update exactly like outside a tournament.
-- **Gates** — Each event requires a **minimum career table** (`minTable`: **0**–**3**), **minimum lifetime hands** (`lsH`), and **minimum lifetime $ won** (`lsW`). These thresholds are independent of the per-table **stake tier unlock** (wins / bank toward **`maxBetAfter`**).
-- **Order** — Events **1 → 6** must be **cleared in order**; event **1** has no prerequisite.
-- **Series** — **First to `tournamentWinsToClinch` wins** (default **2**). **Pushes** do not move the series.
-- **Double-or-nothing** — **Off** while a series is active (and the double `db` state is not set on wins during a series).
+- **Lifetime HUD still counts** — `lsH` / `lsW` update the same whether or not you are in a series; per-table tournament stats are updated in parallel for the **current** career table index.
+- **Enter** — **One active series at a time** (either the career championship **or** one table cup). **Table cups**: you must be **seated on that table** (`window.__d21GameTableIndex` matches) when you tap **Play for prize**, even if your per-table stats already qualify.
+- **Series** — **First to `tournamentWinsToClinch` wins** (default **2**). **Pushes** do not move the series. While a **table cup** is active, only hands at **that** table advance the series score.
+- **Double-or-nothing** — **Off** while a series is active.
 - **Multiplayer** — **Disabled for guests** (`window.__d21Role === 'guest'`): spectators do not see tournament UI; becoming a guest clears an in-progress run. **Hosts** and **solo** play can use tournaments.
 
-### Default tournament list (see `dice21-rules.js` for edits)
+### Defaults (edit `dice21-rules.js`)
 
-| # | Name | Prize (flavor) | `minTable` | Min hands | Min $ won |
-|---|------|----------------|------------|-----------|-----------|
-| 1 | Club Classic | Big-screen TV | 0 | 12 | 500 |
-| 2 | Skyline Open | Laptop & gear | 0 | 28 | 5000 |
-| 3 | Premium Gala | Jewelry & watch | 1 | 55 | 15000 |
-| 4 | Elite Showcase | Sports car weekend | 1 | 90 | 40000 |
-| 5 | High Roller Cup | Yacht charter | 2 | 125 | 100000 |
-| 6 | Grand Invitational | Dream garage & collection | 3 | 180 | 300000 |
+| Track | What to edit |
+|-------|----------------|
+| **Career** | `tournamentLifetime`: `name`, `prize`, `minHands`, `minWon` |
+| **Per table** | `tournamentByTable[]`: `tableIndex`, `name`, `prize`, `minHands`, `minWon` per row |
 
-Tournament keys **`dice21_tournament_done`** and **`dice21_tournament_run`** are documented in the **[browser storage master table](#dice-21--browser-storage-master-table)**.
+Exact shipped numbers are in the file; **`dice21-tournaments.js`** falls back to matching defaults if rules fail to load.
+
+Authoritative storage is **`dice21_tournament_state_v1`** (JSON: `done`, `run`, `perTable`). Legacy keys **`dice21_tournament_done`** / **`dice21_tournament_run`** are removed on first load when migrating. See the **[browser storage master table](#dice-21--browser-storage-master-table)**.
+
+### 3D trophy chips on the felt
+
+Cleared tournaments are shown as **real 3D chip stacks** on the table (not a separate HTML overlay). The main bundle parents them under a scene group (**`d21TrophyRail`**) near the **player-side felt edge**; each newly cleared event adds **another chip beside** the previous, in a fixed order.
+
+- **Order** — Lifetime championship first (if cleared), then table cups in **`tournamentByTable`** / rules order (`t0` … `t3` for the four career felts).
+- **Sync** — When tournament state or felt theme updates, **`dice21-tournaments.js`** calls **`window.__d21TournamentTrophiesSync()`** (defined in the main bundle) so the 3D row matches storage. The main bundle reads flags via **`window.__d21TournamentGetTrophyFlags()`** (implemented in **`dice21-tournaments.js`**): an array of string keys **`life`**, **`t0`** … **`t3`** for cleared events only.
+- **Guests** — Spectators clear the 3D trophy group; tournament UI is already hidden for **`window.__d21Role === 'guest'`**.
+- **Slide animation** — The trophy rail’s **horizontal position** follows the same slide offset as player-side table decor (**`d21SlidePX`**) during win/push animations so chips stay visually aligned with the felt.
 
 ### Hooks from the main bundle
 
-The minified main chunk calls **`window.__d21TournamentAfterHand(result)`** after each resolved hand, **`window.__d21TournamentNoDouble()`** to skip double-offer during a series, and **`window.__d21TournamentReset()`** on **Reset all progress**. **`dice21-mp.js`** hides the tournaments panel for guests and fires **`d21-rolechange`** when MP role changes.
+The minified main chunk calls **`window.__d21TournamentAfterHand(outcome, pot)`** after each resolved hand (**`pot`** = that hand’s pot for player wins — used for per-table $ won), **`window.__d21TournamentNoDouble()`** to skip double-offer during a series, and **`window.__d21TournamentReset()`** on **Reset all progress**. For 3D trophies it relies on **`window.__d21TournamentGetTrophyFlags`** and exposes **`window.__d21TournamentTrophiesSync`** for **`dice21-tournaments.js`** to invoke after UI/storage updates. **`dice21-mp.js`** hides the tournaments panel for guests and fires **`d21-rolechange`** when MP role changes.
+
+### Tournament dev helpers (testing only)
+
+To **skip tournament gates** or **inject series / cleared state** without grinding, enable dev mode **once**:
+
+- **`?d21dev=1`** on the URL, or  
+- **`localStorage.setItem('d21dev', '1'); location.reload()`**
+
+Then in the browser console (**host / solo only** — not guest/watch):
+
+| Call | Purpose |
+|------|---------|
+| **`__d21TournamentDevHelp()`** | Prints full usage text. |
+| **`__d21TournamentDevMeetGates({ lifetime: true })`** | Raises **lifetime** `hands` / `won` in **`dice21_lifetime_v1`** to meet the **Career championship** gate so **Play for prize** appears. |
+| **`__d21TournamentDevMeetGates({ table: 0 })`** | **`table`**: **`0`–`3`** — meets that **table cup** gate via **`dice21_tournament_state_v1`** `perTable` stats (sit on that felt to enter). |
+| **`__d21TournamentDevStartSeries({ scope: 'lifetime', wins: 1, losses: 0 })`** | Starts an **active series** without using the panel (same for **`scope: 'table'`** + **`tableIndex`**). |
+| **`__d21TournamentDevMarkCleared({ lifetime: true, tables: [0, 1] })`** | Marks events **cleared** for quick **3D trophy** testing without playing a series. |
+
+If dev mode is off, these functions are **not** attached; enabling prints a short **`[d21 dev]`** line so you know helpers loaded. After **`__d21TournamentDevMeetGates({ lifetime: true })`**, the on-screen **lifetime** HUD may lag until the next hand or a reload; **eligibility** in the tournament panel uses the updated storage immediately.
+
+Implementation and the file-top comment live in **`public/assets/dice21-tournaments.js`**.
 
 ---
 
@@ -302,6 +337,7 @@ Query parameters are read from **`/dice-21/`** (and the same path on your dev ho
 | **`roomAmbience`** | `1`, `true`, `0`, or `false` | Main bundle | **`1`** / **`true`**: **Room ambience** (looped **19130** casino bed). **`0`** / **`false`**: off. **Omitted** = **`dice21_room_amb`** in `localStorage` if set (`0` / `1`), else **on** by default (same as the **Room ambience** checkbox in the Table dock). |
 | **`djAmbience`** | `1`, `true`, `0`, or `false` | Main bundle | **`1`** / **`true`**: **Ambience DJ** — **silk → lush** playlist (one-shots, chained). **`0`** / **`false`**: off. **Omitted** = **`dice21_amb_dj`** in `localStorage` if set (`0` / `1`), else **on** by default (same as the **Ambience DJ** checkbox in the Table dock). |
 | **`guest`** | `1` or `true` | `dice21-mp.js` | Pretend **multiplayer guest** (spectator): disables deal/bet/hit/stand, chips, mode, reset—useful for layout or HUD testing without a WebSocket room. |
+| **`d21dev`** | `1` | *(none — flag only)* | Enables **tournament dev helpers** on the **`window`** object after **`dice21-tournaments.js`** loads — see **[Tournament dev helpers](#tournament-dev-helpers-testing-only)**. Same effect as **`localStorage`** **`d21dev`** = **`1`**. Does not change gameplay by itself. |
 | **`wsPort`** or **`mpPort`** | `1`–`65535` (e.g. `8788`) | `dice21-mp.js` | WebSocket port for **`mp-server`** (default **8788**). Use if your relay listens on a non-default port. |
 
 ### `previewStakes` details
@@ -335,6 +371,7 @@ Use these to **skip ahead** in the **table-based** career ladder (banks, min bet
 http://localhost:5173/dice-21/?previewStakes=1&mode=classic
 /dice-21/?d21Table=2
 /dice-21/?d21Table=3&d21Phase1=6
+/dice-21/?d21dev=1
 ```
 
 ### Poker Dice
@@ -348,7 +385,7 @@ No URL overrides are implemented on **`/poker-dice/`** in this repo (multiplayer
 **Reset all progress** (Lifetime section) does the following:
 
 - Zeros **lifetime stats** and **badges**, resets **career table** to the first table with **phase-1 wins** at **0**, **bankrolls** to **`startBank`** for that table, and **current hand** / pot / double / toss state (the **visual table** stays the same either way).
-- Removes **table session** and **tournament** keys; calls **`window.__d21TournamentReset()`** (see **`dice21-tournaments.js`**).
+- Removes **table session** and **`dice21_tournament_state_v1`** (and any legacy tournament keys); calls **`window.__d21TournamentReset()`** (see **`dice21-tournaments.js`**).
 - Sets the **drink** choice back to **liquor** (still stored under **`dice21_drink_v1`**).
 
 Keys and exact behavior are listed in the **[master table](#dice-21--browser-storage-master-table)** below. **Not** cleared on reset: dealer mode, ambience, shake overlay, camera save, server hint flags, felt swatch index, mobile panel open/closed prefs, and **`sessionStorage`** multiplayer keys (tab-scoped).
@@ -365,11 +402,12 @@ All **Dice 21** persistence uses fixed string keys. Values are **JSON** unless n
 
 | Key | Typical value | Purpose | **Reset all progress** |
 |-----|---------------|---------|------------------------|
-| **`dice21_lifetime_v1`** | `{ "net", "won", "lost", "hands" }` (numbers) | Lifetime counters for HUD, achievements, tournament gates | Cleared (rewritten to zeros) |
+| **`dice21_lifetime_v1`** | `{ "net", "won", "lost", "hands" }` (numbers) | Lifetime counters for HUD, achievements, **Career championship** gate | Cleared (rewritten to zeros) |
 | **`dice21_achievements_v1`** | `{ "u": [ …achievement ids ], "p": number }` | Unlocked badges (`u`) and push counter (`p`) | Cleared |
 | **`dice21_table_session_v1`** | `{ "v": 2, "ti", "w1", "D", "R", "g", "pw" }` (older v1: `D`, `R`, `g` only) | Table index, phase-1 win count, chip stacks, selected denomination, player wins this table | **Removed** |
-| **`dice21_tournament_done`** | JSON array of event **id** numbers | Finished career tournaments | **Removed** |
-| **`dice21_tournament_run`** | `{ "id", "wins", "losses" }` or absent | Active tournament series | **Removed** |
+| **`dice21_tournament_state_v1`** | `{ "done": { "lifetime", "tables": [...] }, "run", "perTable" }` | Cleared events, active series, per-felt hand/$ stats for gates | **Removed** |
+| **`dice21_tournament_done`** | *(legacy)* | Old six-event ladder; **removed** on migrate to **`dice21_tournament_state_v1`** | **Removed** |
+| **`dice21_tournament_run`** | *(legacy)* | Old active run; **removed** on migrate | **Removed** |
 | **`dice21_drink_v1`** | `"coffee"` \| `"liquor"` \| `"beer"` | Drink prop on the felt | Set to **`"liquor"`** |
 | **`dice21_mode_v1`** | `"classic"` \| `"sharp"` \| `"chill"` \| `"fortune"` | Dealer mode | **Unchanged** |
 | **`dice21_room_amb`** | `"0"` \| `"1"` | Room ambience loop on/off | **Unchanged** |
@@ -383,6 +421,7 @@ All **Dice 21** persistence uses fixed string keys. Values are **JSON** unless n
 | **`d21_ui_achDetails_open`** | `"0"` \| `"1"` | Badges `<details>` open on mobile | **Unchanged** |
 | **`d21_ui_panelHelp_open`** | `"0"` \| `"1"` | Rules/help panel expanded | **Unchanged** |
 | **`d21_ui_badgeOverlay_open`** | `"0"` \| `"1"` | Badge overlay open preference | **Unchanged** |
+| **`d21dev`** | `"1"` when set | Unlocks **`__d21TournamentDev*`** console helpers (see **[Tournament dev helpers](#tournament-dev-helpers-testing-only)**). Optional; **not** cleared by **Reset all progress**. | **Unchanged** |
 
 ### `sessionStorage` (multiplayer only — `dice21-mp.js`)
 
@@ -494,6 +533,7 @@ Multiplayer still needs **`mp-server`** (or equivalent) reachable where the clie
 - **Selected chip `g`** when no denomination fits the bank — **`te()`** clamps using the table’s **`minBet`** from **`__d21RulesTableAt(d21TableIdx)`** (not a hardcoded **$50**).
 - **URL query overrides** (`previewStakes`, `d21Table`, `d21Phase1`, `mode`, `shakeHint`, `reducedMotion`, `diceSfxMs`, `diceSfxHitAt`, `diceShakeSfxMs`, `diceShakeSfxOffsetMs`, `chipPushBigMin`, `roomAmbience`, `djAmbience`, `guest`, `wsPort` / `mpPort`) are documented in **[Dice 21 — URL query parameters](#dice-21--url-query-parameters)**.
 - **`window.__d21Dev`** exposes helpers such as **`previewStakesUp(n)`**, **`jumpTable(ti, w1)`** (test table ladder without URL reload), **`ambienceDj` / `ambienceRoom`**, and getters for quick tuning without URL flags.
+- **Tournaments** — With **`?d21dev=1`** or **`localStorage`** **`d21dev`**, **`__d21TournamentDevMeetGates`**, **`__d21TournamentDevStartSeries`**, **`__d21TournamentDevMarkCleared`**, and **`__d21TournamentDevHelp`** are documented in **[Tournament dev helpers](#tournament-dev-helpers-testing-only)**.
 - Lifetime counters (`lsH`, `lsW`, …) are initialized at **module top** so the HUD and achievements stay consistent when the scene boots (avoids temporal-dead-zone issues with late imports).
 
 ---

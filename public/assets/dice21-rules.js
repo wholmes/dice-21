@@ -11,7 +11,7 @@
  * **alternate** promotion (see `advanceAlt*`) is tuned so **table 0 → 1** targets **~20–40 min** and
  * **each later table → next** targets **~40–60 min** (variance-heavy; bust path unchanged).
  *
- * Load order: include before `main-BosaNfoM.js` / tournaments
+ * Load order: include before the main Dice 21 bundle / tournaments
  * (see `dice-21/index.html`).
  *
  * **Hand / round state** (main bundle variable `i`): `idle` — before the first
@@ -154,22 +154,32 @@
     return net >= T.advanceAltNetProfit && (playerWinsAtTable | 0) >= T.advanceAltPlayerWins
   }
 
-  /** Career tournaments — `minTable` = zero-based table index required to enter. */
-  const tournaments = [
-    { id: 1, name: 'Club Classic', prize: 'Big-screen TV', minTable: 0, minHands: 12, minWon: 500 },
-    { id: 2, name: 'Skyline Open', prize: 'Laptop & gear', minTable: 0, minHands: 28, minWon: 5000 },
-    { id: 3, name: 'Premium Gala', prize: 'Jewelry & watch', minTable: 1, minHands: 55, minWon: 15000 },
-    { id: 4, name: 'Elite Showcase', prize: 'Sports car weekend', minTable: 1, minHands: 90, minWon: 40000 },
-    { id: 5, name: 'High Roller Cup', prize: 'Yacht charter', minTable: 2, minHands: 125, minWon: 100000 },
-    { id: 6, name: 'Grand Invitational', prize: 'Dream garage & collection', minTable: 3, minHands: 180, minWon: 300000 },
-  ]
+  /**
+   * One **lifetime** championship (career totals from `dice21_lifetime_v1`) and one **table cup** per felt.
+   * Table cups use stats accumulated **on that table only** (`dice21_tournament_state_v1` in tournaments script).
+   */
+  const tournamentLifetime = Object.freeze({
+    id: 'life',
+    name: 'Hall of Fame',
+    prize: 'Legend ring (fantasy)',
+    minHands: 60,
+    minWon: 50000,
+  })
+
+  const tournamentByTable = Object.freeze([
+    { tableIndex: 0, name: 'Club Cup', prize: 'Lounge upgrade (fantasy)', minHands: 6, minWon: 300 },
+    { tableIndex: 1, name: 'Skyline Cup', prize: 'City suite night (fantasy)', minHands: 8, minWon: 8000 },
+    { tableIndex: 2, name: 'Summit Cup', prize: 'Jewelry & watch (fantasy)', minHands: 10, minWon: 40000 },
+    { tableIndex: 3, name: 'Pinnacle Cup', prize: 'Garage weekend (fantasy)', minHands: 12, minWon: 400000 },
+  ])
 
   const tournamentWinsToClinch = 2
 
   window.__d21Rules = {
-    version: 7,
+    version: 8,
     tables,
-    tournaments,
+    tournamentLifetime,
+    tournamentByTable,
     tournamentWinsToClinch,
     ladder: LADDER,
     stakeUnlockWins: STAKE_UNLOCK_WINS,

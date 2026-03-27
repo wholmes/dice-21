@@ -102,6 +102,8 @@ function setRole(role) {
 function applyGuestChrome(isGuest) {
   const sel = [
     '#btnDeal',
+    '#btnDealShake',
+    '#mqaPlay',
     '#btnHit',
     '#btnStand',
     '#gameMode',

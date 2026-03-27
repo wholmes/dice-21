@@ -381,10 +381,10 @@
           }
         }
       }
-      /* Stacking: canvas < win overlay < chip dock & felt dock < bottom panel (Deal / Hit / Stand) */
+      /* Stacking: canvas < win overlay < chip dock & felt dock < bottom panel (Deal / Hit / Stand); stay above z-index:2 docks */
       #ui {
         position: fixed;
-        z-index: 3;
+        z-index: 4;
         left: 0;
         right: 0;
         bottom: 0;
@@ -430,6 +430,89 @@
       .mqa-btn:focus-visible {
         outline: 2px solid rgba(232, 200, 122, 0.5);
         outline-offset: 2px;
+      }
+      /* One bar only: #btnDealSplit always visible — left #btnDeal (Bet/Roll), right #btnDealShake */
+      .d21-deal-slot {
+        display: inline-flex;
+        max-width: 100%;
+        vertical-align: middle;
+      }
+      .d21-deal-split {
+        display: flex;
+        flex: 1;
+        min-width: min(100%, 15rem);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow:
+          0 0 0 1px rgba(232, 200, 122, 0.35),
+          0 2px 14px rgba(0, 0, 0, 0.35);
+      }
+      /* Split: Shake is disabled until dice are in the cup (.d21-shake-ready) */
+      #btnDealSplit #btnDeal {
+        border-radius: 0;
+      }
+      .d21-deal-half {
+        flex: 1;
+        min-width: 0;
+        min-height: 44px;
+        margin: 0;
+        border-radius: 0;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-size: 12px;
+      }
+      #btnDealSplit #btnDeal.d21-deal-half {
+        border-right: 1px solid rgba(0, 0, 0, 0.22);
+      }
+      /* Right half: same gold family as Roll — reads as one segmented control, not a grey Hit/Stand */
+      .d21-deal-half--shake {
+        color: #fff4dc;
+        background: linear-gradient(165deg, #c49a3c, #7a5a20);
+        border: none;
+        border-left: 1px solid rgba(0, 0, 0, 0.2);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      }
+      .d21-deal-half--shake:hover:not(:disabled) {
+        filter: brightness(1.05);
+      }
+      .d21-deal-half--shake:active:not(:disabled) {
+        filter: brightness(0.94);
+      }
+      /* Shake stays focusable before the cup; aria-disabled + muted look until dice are in the cup */
+      .d21-deal-half--shake:not(.d21-shake-ready):not(:disabled) {
+        opacity: 0.72;
+        cursor: pointer;
+      }
+      .d21-deal-half--shake:disabled {
+        opacity: 0.38;
+        cursor: not-allowed;
+        filter: grayscale(0.25);
+      }
+      .mqa-btn.mqa-btn-primary {
+        color: #0c0e12;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        border-color: rgba(232, 200, 122, 0.55);
+        background: linear-gradient(165deg, #e8c87a, #c49a3c);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.12) inset,
+          0 2px 10px rgba(0, 0, 0, 0.25);
+        transition: none;
+      }
+      .mqa-btn.mqa-btn-primary:active:not(:disabled) {
+        filter: brightness(0.92);
+      }
+      .mqa-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .mqa-btn.d21-btn-shake {
+        border-color: rgba(232, 200, 122, 0.45);
+        color: #fff4dc;
+        background: linear-gradient(165deg, rgba(72, 56, 32, 0.98), rgba(36, 32, 24, 0.98));
+        box-shadow: 0 0 0 1px rgba(232, 200, 122, 0.2) inset;
+        transition: none;
       }
       .mobile-sheet-backdrop {
         position: fixed;
@@ -733,6 +816,22 @@
         font-size: 11px;
         padding: 4px 8px;
       }
+      .d21-tournament-section-title {
+        margin: 10px 0 4px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgba(200, 184, 152, 0.95);
+      }
+      .d21-tournament-section-title:first-child {
+        margin-top: 0;
+      }
+      .d21-tournament-section-hint {
+        margin: 0 0 6px !important;
+        font-size: 10px !important;
+        line-height: 1.35 !important;
+      }
       .d21-tournament-list {
         display: flex;
         flex-direction: column;
@@ -928,6 +1027,22 @@
         flex-wrap: wrap;
         gap: 8px;
         align-items: center;
+        position: relative;
+        z-index: 2;
+      }
+      /* Optional shake hint control — only visible while dice are shakable (see d21BetDealShakeUiSync) */
+      .d21-shake-hold-btn {
+        min-width: 4.75rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-size: 12px;
+      }
+      .mqa-btn.d21-shake-hold-btn {
+        min-width: 0;
+        flex: 0 1 auto;
+        padding-left: 8px;
+        padding-right: 8px;
       }
       .btn-row-icons {
         margin-left: auto;
@@ -980,6 +1095,21 @@
         transition: transform 0.1s ease, filter 0.12s ease, box-shadow 0.12s ease;
         -webkit-tap-highlight-color: transparent;
       }
+      /* Main deal control — always reads as the primary table action (Bet / Roll when shaking) */
+      #btnDealSplit .primary.d21-deal-primary {
+        min-width: 0;
+      }
+      .primary.d21-deal-primary {
+        min-width: 7.5rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-size: 13px;
+        border: 1px solid rgba(232, 200, 122, 0.45);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.1) inset,
+          0 2px 14px rgba(0, 0, 0, 0.28);
+      }
       .primary:hover:not(:disabled) {
         filter: brightness(1.06);
       }
@@ -1016,6 +1146,17 @@
       .secondary:focus-visible {
         outline: 2px solid rgba(232, 200, 122, 0.5);
         outline-offset: 2px;
+      }
+      .primary.d21-btn-shake {
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-weight: 800;
+        font-size: 13px;
+        background: linear-gradient(165deg, #f5ecd4, #d4b87a);
+        box-shadow:
+          0 0 0 1px rgba(232, 200, 122, 0.45) inset,
+          0 0 28px rgba(232, 200, 122, 0.22);
+        transition: none;
       }
       .ghost {
         color: #8a9aaf;
@@ -1841,96 +1982,6 @@
       #roundOverlaySub:empty {
         display: none;
       }
-      /* Dice shake — above table UI (z-index 3), below double dialog (5); touch/Space hold to shake */
-      #d21ShakeOverlay {
-        position: fixed;
-        inset: 0;
-        z-index: 4;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
-          max(120px, calc(env(safe-area-inset-bottom) + 96px)) max(20px, env(safe-area-inset-left));
-        pointer-events: none;
-        background: radial-gradient(ellipse 95% 55% at 50% 78%, rgba(6, 8, 14, 0.55) 0%, rgba(6, 8, 14, 0.22) 50%, transparent 78%);
-        transition: opacity 0.2s ease;
-      }
-      #d21ShakeOverlay[hidden] {
-        display: none !important;
-      }
-      #d21ShakeOverlay:not([hidden]) {
-        pointer-events: auto;
-      }
-      .d21-shake-overlay-inner {
-        position: relative;
-        width: min(92vw, 26rem);
-        padding: 14px 18px 16px;
-        border-radius: 14px;
-        text-align: center;
-        background: linear-gradient(165deg, rgba(28, 32, 48, 0.94), rgba(14, 16, 24, 0.97));
-        border: 1px solid rgba(232, 200, 122, 0.38);
-        box-shadow:
-          0 0 0 1px rgba(0, 0, 0, 0.35) inset,
-          0 12px 40px rgba(0, 0, 0, 0.5),
-          0 0 32px rgba(232, 200, 122, 0.12);
-        touch-action: none;
-        user-select: none;
-        -webkit-user-select: none;
-      }
-      .d21-shake-overlay-title {
-        margin: 0 0 6px;
-        font-size: clamp(0.72rem, 2.6vw, 0.82rem);
-        font-weight: 800;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: #f0d78c;
-        text-shadow: 0 0 18px rgba(232, 200, 122, 0.3);
-      }
-      .d21-shake-overlay-sub {
-        margin: 0;
-        font-size: clamp(0.8rem, 2.8vw, 0.92rem);
-        line-height: 1.45;
-        color: rgba(200, 210, 228, 0.92);
-        font-weight: 500;
-      }
-      .d21-shake-overlay-kbd {
-        display: inline-block;
-        margin: 0 3px;
-        padding: 2px 8px;
-        border-radius: 6px;
-        font-size: 0.78em;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        color: #e8ecf4;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-      }
-      .d21-shake-overlay-dismiss {
-        position: absolute;
-        top: 4px;
-        right: 4px;
-        z-index: 2;
-        width: 32px;
-        height: 32px;
-        margin: 0;
-        padding: 0;
-        border: none;
-        border-radius: 8px;
-        font-size: 22px;
-        line-height: 1;
-        color: rgba(200, 210, 228, 0.85);
-        background: rgba(255, 255, 255, 0.06);
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .d21-shake-overlay-dismiss:hover {
-        color: #e4e8f0;
-        background: rgba(255, 255, 255, 0.12);
-      }
-      .d21-shake-overlay-dismiss:focus-visible {
-        outline: 2px solid rgba(232, 200, 122, 0.55);
-        outline-offset: 2px;
-      }
       .d21-dock-toggle {
         display: flex;
         align-items: center;
@@ -2005,9 +2056,6 @@
       @media (prefers-reduced-motion: reduce) {
         .d21-dock-toggle-switch,
         .d21-dock-toggle-knob {
-          transition: none;
-        }
-        #d21ShakeOverlay {
           transition: none;
         }
       }
@@ -2597,7 +2645,7 @@
     <script src="/assets/dice21-rules.js"></script>
     <script src="/assets/dice21-badge-showcase.js"></script>
     <script src="/assets/dice21-tournaments.js" defer></script>
-    <script type="module" crossorigin src="/assets/dice21-DU7nhPGz.js"></script>
+    <script type="module" crossorigin src="/assets/dice21-DU7nhPGz.js?v=dice21-core"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
   </head>
   <body>
@@ -2798,34 +2846,6 @@
       </div>
     </div>
     <div
-      id="d21ShakeOverlay"
-      class="d21-shake-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-live="polite"
-      aria-labelledby="d21ShakeOverlayTitle"
-      hidden
-      aria-hidden="true"
-    >
-      <div class="d21-shake-overlay-inner">
-        <button
-          type="button"
-          class="d21-shake-overlay-dismiss"
-          id="d21ShakeOverlayDismiss"
-          aria-label="Close shake hint (turn back on under Table)"
-        >
-          ×
-        </button>
-        <p id="d21ShakeOverlayTitle" class="d21-shake-overlay-title">Shake the dice</p>
-        <p class="d21-shake-overlay-sub">
-          Hold <span class="d21-shake-overlay-kbd">Space</span> or
-          <span class="d21-shake-overlay-kbd">Enter</span>, or press &amp; hold this card—the dice only shake
-          while you hold. Release to roll (or hold until the max shake time). If you never hold, the roll starts
-          shortly on its own. This hint stays up while the dice roll so you know it’s optional next time.
-        </p>
-      </div>
-    </div>
-    <div
       id="doubleOffer"
       class="double-offer"
       role="dialog"
@@ -2891,9 +2911,9 @@
           <h3>Lifetime hands &amp; $ won</h3>
           <p>
             The HUD’s lifetime <strong>hands</strong> and <strong>$ won</strong> (pot payouts on your wins) do
-            <strong>not</strong> change your per-hand max bet in this build. They <strong>do</strong> count toward
-            <strong>career tournament</strong> gates (minimum hands, minimum $ won, minimum table) — see the tournaments
-            list in the Lifetime panel.
+            <strong>not</strong> change your per-hand max bet in this build. The <strong>Career championship</strong>
+            uses lifetime gates; each <strong>table cup</strong> uses hands and $ won on <em>that felt only</em> — see
+            Tournaments in the panel.
           </p>
         </div>
         <div class="d21-stake-help-section">
@@ -2908,7 +2928,7 @@
       </div>
     </div>
     <div id="chipDock" class="bet-dock">
-      <p class="bet-dock-label">Bet</p>
+      <p class="bet-dock-label">Stake</p>
       <div
         class="chip-pick"
         role="group"
@@ -2984,11 +3004,6 @@
         <option value="chill">Chill — stand on 16</option>
         <option value="fortune">Fortune — 21 pays extra</option>
       </select>
-      <label class="d21-dock-toggle" title="Show Space / Enter shake instructions when rolling">
-        <input type="checkbox" id="d21ShakeHintPref" class="d21-dock-toggle-input" />
-        <span class="d21-dock-toggle-switch" aria-hidden="true"><span class="d21-dock-toggle-knob"></span></span>
-        <span class="d21-dock-toggle-text">Shake hint</span>
-      </label>
       <label class="d21-dock-toggle" title="Loop casino room bed (19130) under the DJ playlist">
         <input type="checkbox" id="d21RoomAmbPref" class="d21-dock-toggle-input" checked />
         <span class="d21-dock-toggle-switch" aria-hidden="true"><span class="d21-dock-toggle-knob"></span></span>
@@ -3025,7 +3040,10 @@
     </div>
     <div id="ui">
       <nav id="mobileQuickBar" class="mobile-quick-bar" aria-label="Quick controls">
-        <button type="button" class="mqa-btn" id="mqaBet">Bet</button>
+        <button type="button" class="mqa-btn mqa-btn-primary" id="mqaPlay" aria-label="Scroll to deal — Bet / Roll / Shake">
+          Play
+        </button>
+        <button type="button" class="mqa-btn" id="mqaChips" aria-label="Bet size and chips">Chips</button>
         <button type="button" class="mqa-btn" id="mqaTable">Table</button>
         <button type="button" class="mqa-btn" id="mqaOnline">Online</button>
         <button type="button" class="mqa-btn" id="mqaMore">More</button>
@@ -3072,10 +3090,10 @@
         </details>
         <details class="lifetime-details ach-details" id="d21TournamentDetails">
           <summary>
-            <span class="label-muted">Tournaments</span> <span id="d21TournamentCount">0/6</span>
+            <span class="label-muted">Tournaments</span> <span id="d21TournamentCount">0/5</span>
           </summary>
           <p class="label-muted" style="margin: 0 0 8px; font-size: 10px; line-height: 1.4">
-            Optional best-of series (first to 2 wins). Same chips and lifetime stats — fantasy prizes only. Double-or-nothing is off during a series.
+            One <strong>career</strong> championship (lifetime stats) plus one <strong>cup per table</strong> (stats on that felt only). Best-of series, first to 2 wins — fantasy prizes; double-or-nothing off during a series.
           </p>
           <div class="lifetime-body d21-tournament-list" id="d21TournamentList"></div>
         </details>
@@ -3086,7 +3104,16 @@
         </div>
         <div class="btn-row" style="margin-top: 12px">
           <div class="btn-row-main">
-            <button type="button" class="primary" id="btnDeal" aria-label="Place bet — match the house and roll">Bet</button>
+            <div class="d21-deal-slot">
+              <div id="btnDealSplit" class="d21-deal-split">
+                <button type="button" class="d21-deal-half primary d21-deal-primary" id="btnDeal" aria-label="Place bet — match the house and roll">
+                  Bet
+                </button>
+                <button type="button" class="d21-deal-half d21-deal-half--shake" id="btnDealShake" aria-label="Shake — rattle the cup, then roll">
+                  Shake
+                </button>
+              </div>
+            </div>
             <button type="button" class="secondary" id="btnHit" disabled>Hit</button>
             <button type="button" class="secondary" id="btnStand" disabled>Stand</button>
           </div>

@@ -265,7 +265,23 @@ function init() {
     syncPanelHelpToLayout()
   })
 
-  $('mqaBet')?.addEventListener('click', () => {
+  $('mqaPlay')?.addEventListener('click', () => {
+    if (!isMobileLayout()) return
+    const row = document.querySelector('#ui .btn-row-main')
+    const deal = $('btnDeal')
+    const split = $('btnDealSplit')
+    const target = split || row
+    target?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    const shake = $('btnDealShake')
+    const focusEl =
+      deal && !deal.disabled
+        ? deal
+        : shake && !shake.disabled
+          ? shake
+          : null
+    if (focusEl) requestAnimationFrame(() => focusEl.focus({ preventScroll: true }))
+  })
+  $('mqaChips')?.addEventListener('click', () => {
     if (!isMobileLayout()) return
     openSheet('bet')
   })

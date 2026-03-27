@@ -34,6 +34,7 @@
     'dice21_table_session_v1',
     'dice21_tournament_done',
     'dice21_tournament_run',
+    'dice21_tournament_state_v1',
     'd21_ui_lifeDetails_open',
     'd21_ui_achDetails_open',
     'd21_ui_panelHelp_open',
