@@ -5,8 +5,11 @@
  * a minimum bet until you **unlock** higher `maxBetAfter` on the **same** felt.
  * Unlock when **either**:
  *   • **Wins ≥ `stakeUnlockWins`** (wins at min bet while restricted), **or**
- *   • **Bank ≥ `stakeBankMult` × `maxBetAfter`** (player stack).
- * When the **house bank hits $0**, you move to the next table (new bank, new limits).
+ *   • **Bank ≥ `startBank` + `stakeBankMult` × `maxBetAfter`** (stack **above** the table’s starting bank — avoids
+ *     unlocking on the opening deal when `D` equals `startBank`).
+ * When the **house bank hits $0**, you move to the next table (new bank, new limits). Optional
+ * **alternate** promotion (see `advanceAlt*`) is tuned so **table 0 → 1** targets **~20–40 min** and
+ * **each later table → next** targets **~40–60 min** (variance-heavy; bust path unchanged).
  *
  * Load order: include before `main-BosaNfoM.js` / tournaments
  * (see `dice-21/index.html`).
@@ -23,7 +26,7 @@
 ;(function () {
   /** Wins at min bet (while restricted) that unlock higher limits. */
   const STAKE_UNLOCK_WINS = 6
-  /** Player bank must be ≥ this multiple of `maxBetAfter` to unlock without 6 wins. */
+  /** Added to `startBank`: stack must reach this total to unlock via bank without 6 wins (`stakeBankMult` × `maxBetAfter`). */
   const STAKE_BANK_MULT = 2
 
   /**
@@ -32,7 +35,9 @@
    * @property {number} minBet — Only this denomination until stake tier unlocks.
    * @property {number} winsToUnlock — Doc / meter: aligns with `stakeUnlockWins` (win path).
    * @property {number} maxBetAfter — Highest chip / max bet after unlock (same table).
-   * @property {number} advanceBank — Legacy scale for session **soft cap** math only; promotion uses **house bank $0** (see main bundle `d21AdvanceTableIfNeeded`).
+   * @property {number} advanceBank — Legacy scale for session **soft cap** math only.
+   * @property {number} [advanceAltNetProfit] — Optional: net stack gain (player `D` − `startBank`) required with **`advanceAltPlayerWins`** to promote **without** busting the house (house `R` must stay above zero).
+   * @property {number} [advanceAltPlayerWins] — Optional: player wins **this table** (resolved hands where you take the pot) paired with **`advanceAltNetProfit`** for the alternate promotion path.
    */
 
   /** Four tables — edit freely */
@@ -43,6 +48,9 @@
       winsToUnlock: STAKE_UNLOCK_WINS,
       maxBetAfter: 100,
       advanceBank: 15000,
+      /** Alternate path — pacing target ~20–40 min (with bust path). */
+      advanceAltNetProfit: 750,
+      advanceAltPlayerWins: 12,
     },
     {
       startBank: 3500,
@@ -50,6 +58,9 @@
       winsToUnlock: STAKE_UNLOCK_WINS,
       maxBetAfter: 250,
       advanceBank: 35000,
+      /** Alternate path — pacing target ~40–60 min (heavier than table 0). */
+      advanceAltNetProfit: 4500,
+      advanceAltPlayerWins: 24,
     },
     {
       startBank: 30000,
@@ -57,6 +68,9 @@
       winsToUnlock: STAKE_UNLOCK_WINS,
       maxBetAfter: 2500,
       advanceBank: 300000,
+      /** Alternate path — pacing target ~40–60 min (same band as 1 → 2). */
+      advanceAltNetProfit: 52000,
+      advanceAltPlayerWins: 26,
     },
     {
       startBank: 300000,
@@ -79,12 +93,18 @@
     return tables[n]
   }
 
+  function stakeBankUnlockMin(tIdx) {
+    const T = tableAt(tIdx)
+    const sb = T.startBank || 0
+    return sb + STAKE_BANK_MULT * (T.maxBetAfter | 0)
+  }
+
   function stakeTierUnlocked(tIdx, winsPhase1, playerBank) {
     const T = tableAt(tIdx)
     const w = winsPhase1 | 0
     const bank = playerBank == null || playerBank === undefined ? 0 : +playerBank
     if (w >= STAKE_UNLOCK_WINS) return true
-    if (bank >= STAKE_BANK_MULT * T.maxBetAfter) return true
+    if (bank >= stakeBankUnlockMin(tIdx)) return true
     return false
   }
 
@@ -125,6 +145,15 @@
     return Math.max(T.startBank * 100, T.advanceBank * 10, 1e9)
   }
 
+  /** True when alternate promotion thresholds are met (caller must still require R > 0 and not be on the last table). */
+  function advanceAltMet(tIdx, playerBank, playerWinsAtTable) {
+    const T = tableAt(tIdx)
+    if (typeof T.advanceAltNetProfit !== 'number' || typeof T.advanceAltPlayerWins !== 'number') return false
+    const start = T.startBank || 0
+    const net = (playerBank == null ? 0 : +playerBank) - start
+    return net >= T.advanceAltNetProfit && (playerWinsAtTable | 0) >= T.advanceAltPlayerWins
+  }
+
   /** Career tournaments — `minTable` = zero-based table index required to enter. */
   const tournaments = [
     { id: 1, name: 'Club Classic', prize: 'Big-screen TV', minTable: 0, minHands: 12, minWon: 500 },
@@ -138,7 +167,7 @@
   const tournamentWinsToClinch = 2
 
   window.__d21Rules = {
-    version: 4,
+    version: 7,
     tables,
     tournaments,
     tournamentWinsToClinch,
@@ -152,6 +181,8 @@
   window.__d21RulesChipDenomsFor = chipDenomsFor
   window.__d21RulesIsRestricted = isRestricted
   window.__d21RulesBankSoftCap = bankSoftCap
+  window.__d21RulesAdvanceAltMet = advanceAltMet
+  window.__d21RulesStakeBankUnlockMin = stakeBankUnlockMin
 
   /**
    * Back-compat: returns current max bet for badges / old call sites.

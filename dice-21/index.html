@@ -1453,6 +1453,16 @@
         flex: 1;
         min-width: 0;
       }
+      /* HUD numerals (inline totals / bankroll) */
+      .d21-hud-num-wrap {
+        position: relative;
+        display: inline-block;
+        min-width: 0.55em;
+        vertical-align: baseline;
+      }
+      .d21-hud-num {
+        position: relative;
+      }
       #feltDock .felt-dock-title {
         margin: 0 0 4px;
         width: 100%;
@@ -2872,7 +2882,10 @@
           Your <strong>max bet</strong> and which <strong>chips</strong> appear come from the <strong>career table</strong> in
           <strong>dice21-rules.js</strong>: you stay on <strong>min bet</strong> until you’ve won enough hands at that stake
           (the <strong>stake meter</strong> shows progress), then higher denominations unlock on the <strong>same</strong>
-          felt. To reach the next room, <strong>bust the house bank</strong> (also shown on the meter).
+          felt. After higher chips unlock, you can still pick <strong>any</strong> allowed chip (including the table
+          minimum) to slow losses. To reach the <strong>next</strong> room, <strong>bust the house bank</strong> or meet the
+          alternate gate (net stack + player wins on <em>this</em> table — see the stake hint). The first table is tuned for
+          a quicker first promotion; each later table takes longer on the alternate path.
         </p>
         <div class="d21-stake-help-section">
           <h3>Lifetime hands &amp; $ won</h3>
@@ -3019,13 +3032,14 @@
       </nav>
       <div class="panel">
         <div class="row totals">
-          <span>You <strong id="playerTotal">—</strong></span>
-          <span>Pot <strong id="potVal">0</strong></span>
-          <span>House <strong id="aiTotal">—</strong></span>
+          <span>You <span class="d21-hud-num-wrap"><strong id="playerTotal" class="d21-hud-num">—</strong></span></span>
+          <span>Pot <span class="d21-hud-num-wrap"><strong id="potVal" class="d21-hud-num">0</strong></span></span>
+          <span>House <span class="d21-hud-num-wrap"><strong id="aiTotal" class="d21-hud-num">—</strong></span></span>
         </div>
         <div class="panel-bankroll-row">
           <p class="label-muted panel-bankroll-line">
-            Bankroll ($) — you <strong id="chipsYou">100</strong> · house <strong id="chipsAi">100</strong>
+            Bankroll ($) — you <span class="d21-hud-num-wrap"><strong id="chipsYou" class="d21-hud-num">100</strong></span> · house
+            <span class="d21-hud-num-wrap"><strong id="chipsAi" class="d21-hud-num">100</strong></span>
           </p>
           <button
             type="button"
