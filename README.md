@@ -205,14 +205,14 @@ Exact shipped numbers are in the file; **`dice21-tournaments.js`** falls back to
 
 Authoritative storage is **`dice21_tournament_state_v1`** (JSON: `done`, `run`, `perTable`). Legacy keys **`dice21_tournament_done`** / **`dice21_tournament_run`** are removed on first load when migrating. See the **[browser storage master table](#dice-21--browser-storage-master-table)**.
 
-### 3D trophy chips on the felt
+### 3D trophy gems on the felt
 
-Cleared tournaments are shown as **real 3D chip stacks** on the table (not a separate HTML overlay). The main bundle parents them under a scene group (**`d21TrophyRail`**) near the **player-side felt edge**; each newly cleared event adds **another chip beside** the previous, in a fixed order.
+Cleared tournaments are shown as **real 3D gems** on the table (not a separate HTML overlay). The main bundle parents them under a scene group (**`d21TrophyRail`**) near the **player-side felt edge**. There are **five fixed slots** on the felt (even spacing), marked by **subtle gold-thread rings** on the surface; each slot is reserved for one event — **`life`**, **`t0`**, **`t1`**, **`t2`**, **`t3`** — and a gem appears **only in that slot** when that event is cleared (empty slots stay empty). Each key gets its **own silhouette and tint** (e.g. double-cone, ring, teardrop, octagon prism, cushion).
 
-- **Order** — Lifetime championship first (if cleared), then table cups in **`tournamentByTable`** / rules order (`t0` … `t3` for the four career felts).
-- **Sync** — When tournament state or felt theme updates, **`dice21-tournaments.js`** calls **`window.__d21TournamentTrophiesSync()`** (defined in the main bundle) so the 3D row matches storage. The main bundle reads flags via **`window.__d21TournamentGetTrophyFlags()`** (implemented in **`dice21-tournaments.js`**): an array of string keys **`life`**, **`t0`** … **`t3`** for cleared events only.
+- **Slots** — Left to right: **Career (lifetime)** → **table 0 cup** → **table 1** → **table 2** → **table 3** (`life`, `t0` … `t3`).
+- **Sync** — When tournament state or felt theme updates, **`dice21-tournaments.js`** calls **`window.__d21TournamentTrophiesSync()`** (defined in the main bundle) so the 3D row matches storage. The main bundle reads flags via **`window.__d21TournamentGetTrophyFlags()`** (implemented in **`dice21-tournaments.js`**): an array of string keys **`life`**, **`t0`**, **`t1`**, … for cleared events only.
 - **Guests** — Spectators clear the 3D trophy group; tournament UI is already hidden for **`window.__d21Role === 'guest'`**.
-- **Slide animation** — The trophy rail’s **horizontal position** follows the same slide offset as player-side table decor (**`d21SlidePX`**) during win/push animations so chips stay visually aligned with the felt.
+- **Slide animation** — The trophy rail’s **horizontal position** follows the same slide offset as player-side table decor (**`d21SlidePX`**) during win/push animations so trophies stay visually aligned with the felt.
 
 ### Hooks from the main bundle
 
@@ -235,7 +235,7 @@ Then in the browser console (**host / solo only** — not guest/watch):
 | **`__d21TournamentDevStartSeries({ scope: 'lifetime', wins: 1, losses: 0 })`** | Starts an **active series** without using the panel (same for **`scope: 'table'`** + **`tableIndex`**). |
 | **`__d21TournamentDevMarkCleared({ lifetime: true, tables: [0, 1] })`** | Marks events **cleared** for quick **3D trophy** testing without playing a series. |
 
-If dev mode is off, these functions are **not** attached; enabling prints a short **`[d21 dev]`** line so you know helpers loaded. After **`__d21TournamentDevMeetGates({ lifetime: true })`**, the on-screen **lifetime** HUD may lag until the next hand or a reload; **eligibility** in the tournament panel uses the updated storage immediately.
+The **`__d21TournamentDev*`** functions are **always** on **`window`** (so the console does not throw `ReferenceError`). They only **change state** when dev mode is on; otherwise they **`console.warn`** with the same enable instructions. With **`?d21dev=1`**, a short **`[d21 dev]`** line confirms helpers are active. After **`__d21TournamentDevMeetGates({ lifetime: true })`**, the on-screen **lifetime** HUD may lag until the next hand or a reload; **eligibility** in the tournament panel uses the updated storage immediately.
 
 Implementation and the file-top comment live in **`public/assets/dice21-tournaments.js`**.
 

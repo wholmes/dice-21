@@ -3,9 +3,9 @@
  * Same bankroll & lifetime stats; fantasy prizes. Double-or-nothing off during an active series.
  * Rules object: `window.__d21Rules.tournamentLifetime`, `tournamentByTable`, `tournamentWinsToClinch`.
  *
- * Dev testing (host only): add `?d21dev=1` to the URL or run
- * `localStorage.setItem('d21dev','1'); location.reload()` then use
- * `__d21TournamentDevHelp()` in the console.
+ * Dev testing (host only): `__d21TournamentDev*` is always on `window`; add
+ * `?d21dev=1` or `localStorage.setItem('d21dev','1')` so those calls change state.
+ * Use `__d21TournamentDevHelp()` for the full command list.
  *
  * Copyright © Whittfield Holmes. All rights reserved.
  */
@@ -680,16 +680,13 @@ Mark cleared (e.g. 3D trophy chips) without playing:
 `)
   }
 
-  function installDevTournamentApi() {
-    if (!d21TournamentDevAllowed()) return
-    window.__d21TournamentDevMeetGates = devMeetGates
-    window.__d21TournamentDevStartSeries = devStartSeries
-    window.__d21TournamentDevMarkCleared = devMarkCleared
-    window.__d21TournamentDevHelp = devTournamentHelp
-    console.info('[d21 dev] Tournament helpers loaded — __d21TournamentDevHelp()')
+  window.__d21TournamentDevMeetGates = devMeetGates
+  window.__d21TournamentDevStartSeries = devStartSeries
+  window.__d21TournamentDevMarkCleared = devMarkCleared
+  window.__d21TournamentDevHelp = devTournamentHelp
+  if (d21TournamentDevAllowed()) {
+    console.info('[d21 dev] Tournament helpers ready — __d21TournamentDevHelp()')
   }
-
-  installDevTournamentApi()
 
   window.addEventListener('d21-ready', init)
   window.addEventListener('d21-rolechange', onRoleChange)
