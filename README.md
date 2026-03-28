@@ -47,12 +47,28 @@ Consecutive **player** wins in a session increment an internal **win-streak** co
 
 **Tweaking / preview (console):** Use **`window.__d21Dev.setTestWinStreak(n, smooth?)`** to force the streak level for **visual testing** without playing that many hands in a row. **`n`** is the desired streak (**`0`–`99`**; **`0`** = no heat). By default the smoothed heat **snaps** to match **`n`** so you can iterate on materials and timing. Pass **`false`** as the second argument to only set the internal counter and let the heat **ramp up** naturally. The next resolved hand still applies real outcomes and updates the streak.
 
+**Authoritative math (main bundle):** In **`public/assets/main-dice21-core.js`**, **`d21DiceHeatTargetFromKs()`** uses **`Math.min(1, (ks - 1) / 6)`** (and **`0`** if **`ks <= 0`**). **`d21DiceFireTargetFromKs()`** uses **`0`** if **`ks < 5`**, else **`Math.min(1, (ks - 4) / 5)`**. On-screen values are **smoothed** toward those targets each frame (`d21DiceHeatUpdate`).
+
+| Streak **`n`** (`ks`) | Heat target (before smoothing) | Flame / sparks target (before smoothing) |
+|----------------------:|-------------------------------:|------------------------------------------:|
+| **0** | 0 | 0 |
+| **1**–**4** | builds toward **1** by **`n === 7`** | 0 |
+| **5** | **~0.67** | **0.2** (flame + sparks **on**) |
+| **6** | **~0.83** | **0.4** |
+| **7** | **1** (heat **max**) | **0.6** |
+| **8** | 1 | **0.8** |
+| **9+** | 1 | **1** (flame **max**) |
+
 ```js
-window.__d21Dev.setTestWinStreak(7)        // max heat tier (snapped)
-window.__d21Dev.setTestWinStreak(9)        // max flame + sparks (snapped)
-window.__d21Dev.setTestWinStreak(5)        // flame tier starts (first sparks)
-window.__d21Dev.setTestWinStreak(5, false) // streak 5, ease visuals in over time
-window.__d21Dev.setTestWinStreak(0)        // clear to baseline
+// Scan tiers — run in the browser console on /dice-21/ after the table loads
+window.__d21Dev.setTestWinStreak(0)         // baseline: no heat
+window.__d21Dev.setTestWinStreak(2)         // low heat only
+window.__d21Dev.setTestWinStreak(4)         // heat, no flame yet
+window.__d21Dev.setTestWinStreak(5)         // flame + sparks start
+window.__d21Dev.setTestWinStreak(7)         // heat maxed
+window.__d21Dev.setTestWinStreak(8)         // strong flame, not quite max
+window.__d21Dev.setTestWinStreak(9)         // max flame + sparks
+window.__d21Dev.setTestWinStreak(5, false)  // set counter to 5; let visuals ease in
 ```
 
 ### Rolling the dice
