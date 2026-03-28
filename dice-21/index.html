@@ -199,6 +199,33 @@
       .d21-badge-slot--on .d21-badge-slot__lock {
         display: none;
       }
+      /* Premium: twinkle Blackjack-soul micro-stars only (.d21-badge-sparkles inside badge SVG) */
+      @keyframes d21BadgeSparkleTwinkle {
+        0%,
+        100% {
+          opacity: 0.38;
+          transform: scale(0.9);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.1);
+        }
+      }
+      .d21-badge-slot--premium.d21-badge-slot--on .d21-badge-sparkles path {
+        transform-origin: center;
+        transform-box: fill-box;
+        animation: d21BadgeSparkleTwinkle 1.65s ease-in-out infinite;
+        will-change: opacity, transform;
+      }
+      .d21-badge-slot--premium.d21-badge-slot--on .d21-badge-sparkles path:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .d21-badge-slot--premium.d21-badge-slot--on .d21-badge-sparkles path:nth-child(2) {
+        animation-delay: 0.38s;
+      }
+      .d21-badge-slot--premium.d21-badge-slot--on .d21-badge-sparkles path:nth-child(3) {
+        animation-delay: 0.76s;
+      }
       @keyframes d21BadgePop {
         0% {
           transform: scale(0.92);
@@ -219,6 +246,12 @@
       @media (prefers-reduced-motion: reduce) {
         .d21-badge-slot--pop {
           animation: none;
+        }
+        .d21-badge-slot--premium.d21-badge-slot--on .d21-badge-sparkles path {
+          animation: none;
+          opacity: 0.88;
+          transform: none;
+          will-change: auto;
         }
       }
       @media (max-width: 640px) {
