@@ -33,6 +33,10 @@
         color: #e4e8f0;
         touch-action: manipulation;
       }
+      /* Space below fixed top sign on desktop; badge uses this. Hidden on ≤640px — no offset. */
+      :root {
+        --d21-top-banner-offset: 56px;
+      }
       /* Full-bleed: Three sets inline px; !important keeps canvas glued to the viewport if they drift */
       canvas {
         display: block;
@@ -158,8 +162,15 @@
       .d21-top-banner-sub[hidden] {
         display: none !important;
       }
-      /* Mobile UI: shift the WebGL view up slightly in portrait so the table isn’t vertically centered with empty bands */
+      /* ≤640px: hide fixed sign — it crowded zoom, Badges, and bottom bar; branding stays on desktop + start screen */
       @media (max-width: 640px) {
+        :root {
+          --d21-top-banner-offset: 0px;
+        }
+        .d21-top-banner {
+          display: none !important;
+        }
+        /* Mobile UI: shift the WebGL view up slightly in portrait so the table isn’t vertically centered with empty bands */
         html.is-mobile-ui canvas {
           transform: translate3d(0, -5vh, 0);
         }
@@ -168,7 +179,7 @@
       .d21-badge-showcase {
         position: fixed;
         z-index: 2;
-        top: calc(max(12px, env(safe-area-inset-top)) + 56px);
+        top: calc(max(12px, env(safe-area-inset-top)) + var(--d21-top-banner-offset, 56px));
         left: max(12px, env(safe-area-inset-left));
         width: min(88vw, 280px);
         max-width: 280px;
@@ -410,7 +421,7 @@
         }
         /* Collapsed: compact pill — same height/chrome as #d21mpWrap (zoom + Multiplayer), no wide bar */
         html.is-mobile-ui .d21-badge-showcase.is-badge-collapsed {
-          top: calc(max(10px, env(safe-area-inset-top)) + 56px);
+          top: calc(max(10px, env(safe-area-inset-top)) + var(--d21-top-banner-offset, 56px));
           left: max(10px, env(safe-area-inset-left));
           width: max-content;
           max-width: min(200px, calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 168px));

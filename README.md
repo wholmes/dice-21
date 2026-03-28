@@ -26,9 +26,10 @@ A new deal is allowed from **`idle`** or **`ended`** only when **double-or-nothi
 1. **Pick a chip** (denominations depend on **career table** + unlocks; the first career table uses **$50**, then higher chips after you **unlock** that table’s upper limit—**6** wins at min bet **or** player bank **≥ `startBank` + (2× `maxBetAfter`)**—see **`dice21-rules.js`**) and press **Bet** (or the main bet control). You and the house each put that amount in; the **pot** is both antes combined (e.g. a **$50** bet ⇒ **$100** in the pot before dice).
 2. You get a **two-dice roll** to start. Your total shows in the panel.
 3. **Hit** to roll more dice, or **Stand** to lock your total and send play to the house.
-4. **Hitting:** If your total is **under 14**, your next hit uses **two dice** at once. At **14 or more**, each hit is **one die** only—so high totals get riskier.
-5. The **house** then rolls automatically until it stands or busts, following the **dealer mode** you chose (see below).
-6. **Compare:** Higher total without busting wins the pot. Tie = **push** (see below).
+4. **After you tap Hit:** The next roll does **not** happen immediately—you choose **Roll** (instant roll) or **Shake** (dice go to the cup, shake animation, then roll). **Stand** stays disabled until you resolve that roll or shake. **Shake** uses the same cup path as a normal deal: rattle, then commit roll.
+5. **Hitting:** If your total is **under 14**, your next hit uses **two dice** at once. At **14 or more**, each hit is **one die** only—so high totals get riskier.
+6. The **house** then rolls automatically until it stands or busts, following the **dealer mode** you chose (see below).
+7. **Compare:** Higher total without busting wins the pot. Tie = **push** (see below).
 
 ### Winning, losing, and pushes
 
@@ -39,6 +40,20 @@ A new deal is allowed from **`idle`** or **`ended`** only when **double-or-nothi
 ### After you win — double or nothing
 
 When you win a pot, you may get **Double or nothing?**: risk that win on a single **your die vs house die** roll (higher wins; ties re-roll). You can **Take win** to skip the gamble.
+
+### Win streak (“hot” dice)
+
+Consecutive **player** wins in a session increment an internal **win-streak** counter (the same counter that can trigger the **“WIN STREAK!”** toast after **2+** wins in a row; it resets when the **house** wins a hand). **Heat** (orange/red emissive on your dice) ramps from the first win and reaches **full** intensity at a **7**‑win streak, with easing and a subtle pulse (toned down if **`prefers-reduced-motion`**). From **five** wins upward, a **flame** layer blends in (warmer emissive + extra intensity); it reaches **full** strength at a **9**‑win streak. Smoothing applies so both heat and flame **ease in and out** when the streak changes. **Sparks:** **~28** additive **`Points`** live in the **scene** (not parented to the dice mesh) with positions updated **in world space** above the dice so they track the roll; each point uses a **radial canvas texture** (soft round sprites), **pixel-sized** rendering with **size attenuation off**, **depthWrite** off, and **additive** blending—kept subtle so it reads as ember/haze, not a full-screen effect. **`prefers-reduced-motion`** scales both emissive and particles down. House dice are unchanged.
+
+**Tweaking / preview (console):** Use **`window.__d21Dev.setTestWinStreak(n, smooth?)`** to force the streak level for **visual testing** without playing that many hands in a row. **`n`** is the desired streak (**`0`–`99`**; **`0`** = no heat). By default the smoothed heat **snaps** to match **`n`** so you can iterate on materials and timing. Pass **`false`** as the second argument to only set the internal counter and let the heat **ramp up** naturally. The next resolved hand still applies real outcomes and updates the streak.
+
+```js
+window.__d21Dev.setTestWinStreak(7)        // max heat tier (snapped)
+window.__d21Dev.setTestWinStreak(9)        // max flame + sparks (snapped)
+window.__d21Dev.setTestWinStreak(5)        // flame tier starts (first sparks)
+window.__d21Dev.setTestWinStreak(5, false) // streak 5, ease visuals in over time
+window.__d21Dev.setTestWinStreak(0)        // clear to baseline
+```
 
 ### Rolling the dice
 
@@ -64,6 +79,7 @@ Other badges (first hand, first blood, dealer modes, pushes, lucky 7, house bust
 
 ### Center panel & Mode dock layout
 
+- **Top sign (desktop):** A fixed **“Dice · Casino”** marquee-style strip at the top of the viewport (dark metal panel, **Bebas Neue** wordmark). **`public/assets/dice21-top-banner.js`** exposes **`window.d21SetTopBanner(name, game, subline?)`** for a title line plus optional announcement subline (e.g. tournaments). On **narrow viewports (`max-width: 640px`)** the strip is **hidden** so it does not crowd zoom, Badges, and the bottom controls—branding still appears on the **Tap to play** screen and on the felt logo.
 - **Center panel** (`#ui .panel`): **Totals** row (**You / Pot / House**) first; then **one row** with **Bankroll ($)** on the **left** and the **+/−** expand control for **rules & messages** on the **right**; **rule hint** and **message** sit **below** that row.
 - **Tournaments** (`<details id="d21TournamentDetails">`): Short **bulleted intro** (how career + table cups work) with horizontal padding aligned to the list below—not a single flush-left paragraph.
 - **Lower-right** (**Mode** dock, `#feltDock`): **“Dice 21”** as the title, then **Mode** (dealer rules), **Shake hint**, **Room ambience**, **Ambience DJ**.
@@ -212,7 +228,7 @@ Authoritative storage is **`dice21_tournament_state_v1`** (JSON: `done`, `run`, 
 
 ### 3D trophy gems on the felt
 
-Cleared tournaments are shown as **real 3D gems** on the table (not a separate HTML overlay). The main bundle parents them under a scene group (**`d21TrophyRail`**) near the **player-side felt edge**. There are **five fixed slots** on the felt (even spacing), marked by **very subtle stitched rings** (low-contrast torus markers on the felt). A small **TOURNAMENTS** label (canvas texture, subdued) sits above the row. Each slot is reserved for one event — **`life`**, **`t0`**, **`t1`**, **`t2`**, **`t3`** — and a gem appears **only in that slot** when that event is cleared (empty slots stay empty). The **lifetime** slot’s ring reads slightly different (cooler tint, slightly larger outer ring + **inner** ring “bullseye”). Each key gets its **own silhouette and tint** (e.g. double-cone, ring, teardrop, octagon prism, cushion); the **lifetime** gem scales slightly larger than the default.
+Cleared tournaments are shown as **real 3D gems** on the table (not a separate HTML overlay). The main bundle parents them under a scene group (**`d21TrophyRail`**) near the **player-side felt edge**. There are **five fixed slots** on the felt (even spacing), marked by **very subtle stitched rings** (low-contrast torus markers on the felt). A small **TOURNAMENTS** label (canvas texture, subdued) sits above the row. Each slot is reserved for one event — **`life`**, **`t0`**, **`t1`**, **`t2`**, **`t3`** — and a gem appears **only in that slot** when that event is cleared (empty slots stay empty). The **lifetime** slot’s ring reads slightly different (cooler tint, slightly larger outer ring + **inner** ring “bullseye”). Gems use a **shared diamond silhouette** (paired cones); **color and scale** vary by event key (lifetime vs table cups, hashed tiers).
 
 - **Slots** — Left to right: **Career (lifetime)** → **table 0 cup** → **table 1** → **table 2** → **table 3** (`life`, `t0` … `t3`).
 - **Sync** — When tournament state or felt theme updates, **`dice21-tournaments.js`** calls **`window.__d21TournamentTrophiesSync()`** (defined in the main bundle) so the 3D row matches storage. The main bundle reads flags via **`window.__d21TournamentGetTrophyFlags()`** (implemented in **`dice21-tournaments.js`**): an array of string keys **`life`**, **`t0`**, **`t1`**, … for cleared events only.
@@ -359,6 +375,8 @@ Use these to **skip ahead** in the **table-based** career ladder (banks, min bet
 - **`d21Phase1`** — Optional. Simulates **player wins at min bet** on that table (capped at that table’s **`winsToUnlock`**, usually **6**). To see **full chip rows** after unlock (e.g. **$10,000** / **$25,000** on the last table), set this to **`winsToUnlock`** (often **`6`**). Omit or use **`0`** to stay on **min bet only** (unless starting **`D`** already meets **`startBank` + 2× `maxBetAfter`**).
 
 **Console (no reload):** `window.__d21Dev.jumpTable(tableIndex, phase1Wins)` — same semantics; **`phase1Wins`** may be omitted (treated as **`0`**). Clears the saved table session and refreshes felt, chips, and meter.
+
+**Dice heat preview:** See **[Win streak (“hot” dice)](#win-streak-hot-dice)** for **`window.__d21Dev.setTestWinStreak(n, smooth?)`**.
 
 **Remove** `d21Table` / `d21Phase1` from the URL and reload to return to normal **saved-session** behavior (or play without those params so stacks persist again).
 
@@ -531,13 +549,13 @@ Multiplayer still needs **`mp-server`** (or equivalent) reachable where the clie
 
 ## Development notes (Dice 21 bundle)
 
-- Game logic and 3D live in the Dice 21 **main chunk** under `public/assets/` (**`main-dice21-core.js`** in this repo; the entry script **`dice21-*.js`** imports it with a cache-busting query when needed).
+- Game logic and 3D live in the Dice 21 **main chunk** under `public/assets/` (**`main-dice21-core.js`** in this repo; the entry script **`dice21-*.js`** imports it with a cache-busting query when needed). The bundle implements **hit deferral** (Roll vs Shake), **streak-based emissive heat** and **win-streak sparks** (scene `Points` + radial texture + world-space follow) on player dice, and **trophy gem** geometry; the **top banner** is **`public/assets/dice21-top-banner.js`** + markup in **`dice-21/index.html`**.
 - **Table SFX** (impacts, shake loop, pot chip pushes, room ambience, cash register, win sting, etc.) live under **`public/audio/`**; see **[Dice 21 — audio assets (public/audio)](#dice-21--audio-assets-publicaudio)**.
 - **`npm run dj:manifest`** (see **`scripts/generate-dj-manifest.mjs`**) regenerates **`public/audio/dj/manifest.json`** before **`predev`** / **`prebuild`** so new DJ WAVs are picked up without hand-editing JSON.
 - **Bet limits** — `d21StakeTierMax()` → `__d21RulesMaxBetFor(d21TableIdx, d21WinsPhase1, D)` (or **`previewStakes`**). **`d21StakeHintText`** / **`d21StakeMeterUpdate`** reflect **stake unlock** (wins **or** bank) and **house bank** toward the next table, not a lifetime **`lsH` / `lsW`** ladder.
 - **Selected chip `g`** when no denomination fits the bank — **`te()`** clamps using the table’s **`minBet`** from **`__d21RulesTableAt(d21TableIdx)`** (not a hardcoded **$50**).
 - **URL query overrides** (`previewStakes`, `d21Table`, `d21Phase1`, `mode`, `shakeHint`, `reducedMotion`, `diceSfxMs`, `diceSfxHitAt`, `diceShakeSfxMs`, `diceShakeSfxOffsetMs`, `chipPushBigMin`, `roomAmbience`, `djAmbience`, `guest`, `wsPort` / `mpPort`) are documented in **[Dice 21 — URL query parameters](#dice-21--url-query-parameters)**.
-- **`window.__d21Dev`** exposes helpers such as **`previewStakesUp(n)`**, **`jumpTable(ti, w1)`** (test table ladder without URL reload), **`ambienceDj` / `ambienceRoom`**, and getters for quick tuning without URL flags.
+- **`window.__d21Dev`** exposes helpers such as **`previewStakesUp(n)`**, **`jumpTable(ti, w1)`** (test table ladder without URL reload), **`setTestWinStreak(n, smooth?)`** (preview **heated** dice at a given **win-streak** count), **`ambienceDj` / `ambienceRoom`**, and getters for quick tuning without URL flags.
 - **Tournaments** — With **`?d21dev=1`** or **`localStorage`** **`d21dev`**, **`__d21TournamentDevMeetGates`**, **`__d21TournamentDevStartSeries`**, **`__d21TournamentDevMarkCleared`**, and **`__d21TournamentDevHelp`** are documented in **[Tournament dev helpers](#tournament-dev-helpers-testing-only)**.
 - Lifetime counters (`lsH`, `lsW`, …) are initialized at **module top** so the HUD and achievements stay consistent when the scene boots (avoids temporal-dead-zone issues with late imports).
 
