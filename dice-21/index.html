@@ -9,6 +9,12 @@
     <meta name="copyright" content="Copyright © Whittfield Holmes" />
     <title>Dice 21</title>
     <link rel="icon" href="/assets/favicon-D8NRme3X.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * {
         box-sizing: border-box;
@@ -37,6 +43,121 @@
         max-width: none;
         z-index: 0;
       }
+      /* Top sign: casino marquee; stylized wordmark (no script). Update via window.d21SetTopBanner */
+      .d21-top-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 11;
+        padding: max(6px, env(safe-area-inset-top)) 12px 0;
+        pointer-events: none;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+      }
+      .d21-top-banner-inner {
+        position: relative;
+        max-width: min(92vw, 520px);
+        width: 100%;
+        padding: 0.55rem 1.1rem 0.65rem;
+        border-radius: 8px;
+        /* Dark metal / smoked panel — no wood tones */
+        background:
+          linear-gradient(165deg, rgba(90, 98, 118, 0.2) 0%, transparent 45%),
+          linear-gradient(180deg, #222836 0%, #151822 48%, #0c0e14 100%);
+        border: 2px solid;
+        border-color: rgba(232, 200, 140, 0.35) rgba(20, 22, 32, 0.95) rgba(0, 0, 0, 0.65) rgba(232, 200, 140, 0.18);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.07) inset,
+          0 3px 0 rgba(0, 0, 0, 0.35) inset,
+          0 12px 32px rgba(0, 0, 0, 0.55);
+        text-align: center;
+      }
+      /* Small brass rivets (optional metal detail, not wood nails) */
+      .d21-top-banner-inner::before,
+      .d21-top-banner-inner::after {
+        content: "";
+        position: absolute;
+        top: -1px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #e8d8b8, #9a8868 42%, #3a3834 100%);
+        box-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.2),
+          0 2px 4px rgba(0, 0, 0, 0.65);
+      }
+      .d21-top-banner-inner::before {
+        left: 14px;
+      }
+      .d21-top-banner-inner::after {
+        right: 14px;
+      }
+      .d21-top-banner-sign-line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35em 0.5em;
+        margin: 0;
+        padding: 0.1rem 0.15rem 0;
+      }
+      .d21-top-banner-name {
+        margin: 0;
+        font-family: 'Bebas Neue', Impact, 'Arial Narrow', sans-serif;
+        font-size: clamp(1.5rem, 4.6vw, 2.05rem);
+        font-weight: 400;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: #f0ebe3;
+        line-height: 1;
+        text-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.18),
+          0 2px 0 rgba(0, 0, 0, 0.45),
+          0 3px 8px rgba(0, 0, 0, 0.95);
+      }
+      .d21-top-banner-sep {
+        font-size: clamp(0.55rem, 1.6vw, 0.7rem);
+        color: rgba(232, 200, 122, 0.55);
+        line-height: 1;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+        user-select: none;
+      }
+      .d21-top-banner-game {
+        margin: 0;
+        font-family: 'Bebas Neue', Impact, 'Arial Narrow', sans-serif;
+        font-size: clamp(1.65rem, 5vw, 2.25rem);
+        font-weight: 400;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        line-height: 1;
+        background: linear-gradient(185deg, #fff8e8 0%, #e8c878 38%, #b8862c 72%, #6a4a18 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: #e8c878;
+        text-shadow: none;
+        filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 12px rgba(232, 200, 122, 0.12));
+      }
+      @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+        .d21-top-banner-game {
+          color: transparent;
+        }
+      }
+      .d21-top-banner-sub {
+        display: block;
+        margin: 0.4rem 0 0;
+        padding-top: 0.35rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.35);
+        font-size: clamp(9px, 2.3vw, 10.5px);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: #a8b0c0;
+        line-height: 1.35;
+      }
+      .d21-top-banner-sub[hidden] {
+        display: none !important;
+      }
       /* Mobile UI: shift the WebGL view up slightly in portrait so the table isn’t vertically centered with empty bands */
       @media (max-width: 640px) {
         html.is-mobile-ui canvas {
@@ -47,7 +168,7 @@
       .d21-badge-showcase {
         position: fixed;
         z-index: 2;
-        top: max(12px, env(safe-area-inset-top));
+        top: calc(max(12px, env(safe-area-inset-top)) + 56px);
         left: max(12px, env(safe-area-inset-left));
         width: min(88vw, 280px);
         max-width: 280px;
@@ -289,7 +410,7 @@
         }
         /* Collapsed: compact pill — same height/chrome as #d21mpWrap (zoom + Multiplayer), no wide bar */
         html.is-mobile-ui .d21-badge-showcase.is-badge-collapsed {
-          top: max(10px, env(safe-area-inset-top));
+          top: calc(max(10px, env(safe-area-inset-top)) + 56px);
           left: max(10px, env(safe-area-inset-left));
           width: max-content;
           max-width: min(200px, calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 168px));
@@ -515,10 +636,11 @@
       .d21-deal-half--shake:active:not(:disabled) {
         filter: brightness(0.94);
       }
-      /* Shake stays focusable before the cup; aria-disabled + muted look until dice are in the cup */
-      .d21-deal-half--shake:not(.d21-shake-ready):not(:disabled) {
+      /* Until dice are in the cup: muted + no taps (after Hit, Roll vs Shake only once .d21-shake-ready) */
+      .d21-deal-half--shake:not(.d21-shake-ready) {
         opacity: 0.72;
-        cursor: pointer;
+        cursor: not-allowed;
+        pointer-events: none;
       }
       .d21-deal-half--shake:disabled {
         opacity: 0.38;
@@ -2752,8 +2874,9 @@
     <script src="/assets/dice21-camera-loading-ui.js"></script>
     <script src="/assets/dice21-rules.js"></script>
     <script src="/assets/dice21-badge-showcase.js"></script>
+    <script src="/assets/dice21-top-banner.js" defer></script>
     <script src="/assets/dice21-tournaments.js" defer></script>
-    <script type="module" crossorigin src="/assets/dice21-DU7nhPGz.js?v=dice21-core-lt5"></script>
+    <script type="module" crossorigin src="/assets/dice21-DU7nhPGz.js?v=dice21-core-lt8"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
   </head>
   <body>
@@ -2833,6 +2956,16 @@
       </footer>
     </div>
     <div id="app">
+      <div id="d21TopBanner" class="d21-top-banner" role="banner" aria-label="Game announcement">
+        <div class="d21-top-banner-inner">
+          <p class="d21-top-banner-sign-line">
+            <span class="d21-top-banner-name" id="d21TopBannerName">Dice</span>
+            <span class="d21-top-banner-sep" aria-hidden="true">◆</span>
+            <span class="d21-top-banner-game" id="d21TopBannerGame">Casino</span>
+          </p>
+          <p class="d21-top-banner-sub" id="d21TopBannerSub" hidden></p>
+        </div>
+      </div>
       <div
         class="d21-badge-showcase is-badge-collapsed"
         id="d21BadgeShowcase"
