@@ -1,11 +1,18 @@
 /**
  * Upper-left badge artwork — syncs with dice21_achievements_v1 and game __d21Ach.
  *
+ * Dev — show every badge’s art (ignore unlock state):
+ *   • URL: ?d21badges=all or ?d21badges=1
+ *   • localStorage: d21_show_all_badges = 1
+ *   • JS before load: window.__D21_SHOW_ALL_BADGES__ = true
+ *   • After load: d21BadgeArtworkPreview(true)  // then d21BadgeArtworkPreview(false) to clear
+ *
  * Copyright © Whittfield Holmes. All rights reserved.
  */
 ;(function () {
   const ACH_KEY = 'dice21_achievements_v1'
-  const BADGE_GRID_VERSION = '18'
+  const LS_PREVIEW = 'd21_show_all_badges'
+  const BADGE_GRID_VERSION = '21'
 
   const ORDER = [
     'green_table',
@@ -66,7 +73,31 @@
   let prevUnlocked = new Set()
   let inited = false
 
+  function isBadgesArtworkPreview() {
+    try {
+      if (typeof window !== 'undefined' && window.__D21_SHOW_ALL_BADGES__ === true) return true
+      if (typeof location !== 'undefined') {
+        const q = new URLSearchParams(location.search).get('d21badges')
+        if (q === 'all' || q === '1') return true
+      }
+      if (typeof localStorage !== 'undefined' && localStorage.getItem(LS_PREVIEW) === '1') return true
+    } catch {
+      /* ignore */
+    }
+    return false
+  }
+
+  function syncPreviewChrome(on) {
+    const root = document.getElementById('d21BadgeShowcase')
+    if (!root) return
+    root.classList.toggle('d21-badge-showcase--dev-preview', on)
+    root.setAttribute('aria-label', on ? 'Badges — artwork preview (dev)' : 'Earned badges')
+    const t = document.querySelector('.d21-badge-showcase-title')
+    if (t) t.textContent = on ? 'Badges · preview' : 'Badges'
+  }
+
   function readUnlocked() {
+    if (isBadgesArtworkPreview()) return ORDER.slice()
     try {
       if (window.__d21Ach && Array.isArray(window.__d21Ach.unlocked)) {
         return window.__d21Ach.unlocked.slice()
@@ -95,7 +126,65 @@
         )
       case 'one_chip':
         return g(
-          `<defs><linearGradient id="g${uid}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8d5a8"/><stop offset="100%" stop-color="#8a6f3d"/></linearGradient></defs><ellipse cx="32" cy="40" rx="14" ry="5" fill="#2a2435"/><ellipse cx="32" cy="36" rx="14" ry="5" fill="url(#g${uid}g)"/><ellipse cx="32" cy="32" rx="14" ry="5" fill="url(#g${uid}g)"/><text x="32" y="35" text-anchor="middle" fill="#1a1510" font-family="system-ui,sans-serif" font-size="9" font-weight="800">1</text>`,
+          `<defs>
+            <clipPath id="g${uid}felt"><circle cx="32" cy="32" r="18.4"/></clipPath>
+            <filter id="g${uid}grain" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+              <feTurbulence type="fractalNoise" baseFrequency="0.92" numOctaves="4" seed="17" result="n"/>
+              <feColorMatrix in="n" type="luminanceToAlpha" result="la"/>
+              <feComponentTransfer in="la" result="mask">
+                <feFuncA type="linear" slope="0.32" intercept="0"/>
+              </feComponentTransfer>
+              <feFlood flood-color="#031a12" flood-opacity="1" result="f"/>
+              <feComposite in="f" in2="mask" operator="in" result="grain"/>
+              <feBlend in="SourceGraphic" in2="grain" mode="multiply" result="out"/>
+            </filter>
+            <radialGradient id="g${uid}rim" cx="34%" cy="30%" r="95%">
+              <stop offset="0%" stop-color="#faf2dc"/>
+              <stop offset="28%" stop-color="#e8c878"/>
+              <stop offset="58%" stop-color="#b08038"/>
+              <stop offset="88%" stop-color="#5c3c18"/>
+              <stop offset="100%" stop-color="#2c1810"/>
+            </radialGradient>
+            <linearGradient id="g${uid}band" x1="8%" y1="8%" x2="92%" y2="92%">
+              <stop offset="0%" stop-color="#fff6e0"/>
+              <stop offset="22%" stop-color="#d4a848"/>
+              <stop offset="55%" stop-color="#8a6020"/>
+              <stop offset="100%" stop-color="#3a2010"/>
+            </linearGradient>
+            <radialGradient id="g${uid}face" cx="36%" cy="32%" r="82%">
+              <stop offset="0%" stop-color="#5cb896"/>
+              <stop offset="18%" stop-color="#3a9a72"/>
+              <stop offset="42%" stop-color="#267a58"/>
+              <stop offset="68%" stop-color="#1a5d42"/>
+              <stop offset="100%" stop-color="#0c3024"/>
+            </radialGradient>
+            <linearGradient id="g${uid}nap" x1="12%" y1="10%" x2="88%" y2="92%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.14"/>
+              <stop offset="35%" stop-color="#ffffff" stop-opacity="0.02"/>
+              <stop offset="100%" stop-color="#000000" stop-opacity="0.18"/>
+            </linearGradient>
+            <radialGradient id="g${uid}shade" cx="72%" cy="78%" r="58%">
+              <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
+              <stop offset="70%" stop-color="#000000" stop-opacity="0.22"/>
+              <stop offset="100%" stop-color="#000000" stop-opacity="0.42"/>
+            </radialGradient>
+            <filter id="g${uid}soft" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="1.2"/>
+            </filter>
+          </defs>
+          <ellipse cx="32" cy="36.5" rx="22" ry="3.2" fill="#000" opacity="0.22" filter="url(#g${uid}soft)"/>
+          <circle cx="32" cy="32" r="26" fill="url(#g${uid}rim)" stroke="url(#g${uid}band)" stroke-width="1.9"/>
+          <circle cx="32" cy="32" r="23.2" fill="none" stroke="rgba(0,0,0,0.28)" stroke-width="0.85"/>
+          <circle cx="32" cy="32" r="22.2" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.45"/>
+          <g clip-path="url(#g${uid}felt)" filter="url(#g${uid}grain)">
+            <circle cx="32" cy="32" r="18.4" fill="url(#g${uid}face)"/>
+            <circle cx="32" cy="32" r="18.4" fill="url(#g${uid}nap)"/>
+            <circle cx="32" cy="32" r="18.4" fill="url(#g${uid}shade)"/>
+          </g>
+          <circle cx="32" cy="32" r="18.4" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="0.55"/>
+          <circle cx="32" cy="32" r="16.6" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="0.4"/>
+          <ellipse cx="23" cy="21" rx="9" ry="5.5" fill="rgba(255,255,255,0.09)" transform="rotate(-28 23 21)"/>
+          <text x="32" y="37.5" text-anchor="middle" fill="#f8f4e8" stroke="rgba(0,0,0,0.28)" stroke-width="0.6" paint-order="stroke fill" font-family="system-ui,sans-serif" font-size="16" font-weight="800">1</text>`,
         )
       case 'club_member':
         return g(
@@ -207,6 +296,9 @@
     const grid = document.getElementById('d21BadgeGrid')
     if (!grid) return
 
+    const preview = isBadgesArtworkPreview()
+    syncPreviewChrome(preview)
+
     const unlocked = new Set(readUnlocked())
 
     if (!grid.dataset.built || grid.dataset.badgeVer !== BADGE_GRID_VERSION) {
@@ -231,7 +323,7 @@
       el.setAttribute('title', on ? LABELS[id] || id : LOCKED_TITLE)
       el.classList.toggle('d21-badge-slot--on', on)
       el.classList.toggle('d21-badge-slot--off', !on)
-      if (inited && on && !prevUnlocked.has(id)) {
+      if (inited && on && !prevUnlocked.has(id) && !preview) {
         el.classList.remove('d21-badge-slot--pop')
         void el.offsetWidth
         el.classList.add('d21-badge-slot--pop')
@@ -244,6 +336,19 @@
   }
 
   window.d21BadgeShowcaseRefresh = render
+  /**
+   * @param {boolean} on — true: show all badge art (persists in localStorage); false: clear preview
+   */
+  window.d21BadgeArtworkPreview = function (on) {
+    try {
+      if (on) localStorage.setItem(LS_PREVIEW, '1')
+      else localStorage.removeItem(LS_PREVIEW)
+    } catch {
+      /* ignore */
+    }
+    render()
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', render)
   } else {

@@ -10,7 +10,7 @@ import path from 'node:path'
 
 const distAssets = path.resolve('dist', 'assets')
 const needle = 'await v(()=>import("./main-dice21-core.js"),__vite__mapDeps([0,1]))'
-const repl = 'await import("./main-dice21-core.js?v=lt2")'
+const repl = 'await import("./main-dice21-core.js?v=lt5")'
 
 let ok = false
 if (fs.existsSync(distAssets)) {

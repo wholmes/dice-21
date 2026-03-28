@@ -100,6 +100,9 @@
         text-transform: uppercase;
         color: #7a8a9e;
       }
+      .d21-badge-showcase--dev-preview .d21-badge-showcase-title {
+        color: #c9a86a;
+      }
       .d21-badge-toggle {
         display: none;
         flex-shrink: 0;
@@ -789,32 +792,88 @@
         display: block;
         color: rgba(180, 195, 218, 0.95);
       }
-      #d21TournamentActive {
-        margin: 10px 0 0;
-        padding: 8px 10px;
-        border-radius: 8px;
-        border: 1px solid rgba(232, 200, 122, 0.28);
-        background: rgba(24, 28, 42, 0.55);
+      /* Active series: fixed top strip — does not inflate the bottom .panel over the table */
+      .d21-tournament-active-banner {
+        position: fixed;
+        top: max(10px, env(safe-area-inset-top));
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 4;
+        width: min(92vw, 440px);
+        max-width: 560px;
+        margin: 0;
+        padding: 8px 10px 9px;
+        box-sizing: border-box;
+        pointer-events: auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "title leave"
+          "score score";
+        gap: 2px 10px;
+        align-items: start;
+        border-radius: 10px;
+        border: 1px solid rgba(232, 200, 122, 0.35);
+        background: rgba(14, 16, 24, 0.92);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow:
+          0 8px 28px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(0, 0, 0, 0.25) inset;
       }
       #d21TournamentActive[hidden] {
         display: none !important;
       }
       #d21TournamentActiveTitle {
-        margin: 0 0 4px;
-        font-size: 11px;
+        grid-area: title;
+        margin: 0;
+        font-size: 10px;
         font-weight: 700;
         color: #e8d4a8;
-        line-height: 1.35;
+        line-height: 1.3;
+        max-height: 2.7em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
       }
-      #d21TournamentActiveScore {
-        margin: 0 0 6px;
-        font-size: 11px;
+      #d21TournamentActiveScore,
+      .d21-tournament-active-score {
+        grid-area: score;
+        margin: 0;
+        font-size: 10px;
         color: #8a9aaf;
-        line-height: 1.35;
+        line-height: 1.3;
       }
-      #d21TournamentAbandon {
-        font-size: 11px;
-        padding: 4px 8px;
+      #d21TournamentAbandon,
+      .d21-tournament-active-leave {
+        grid-area: leave;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 6px 10px;
+        white-space: nowrap;
+        border-radius: 8px;
+        margin: 0;
+        align-self: start;
+      }
+      @media (max-width: 640px) {
+        .d21-tournament-active-banner {
+          width: min(calc(100vw - 20px), 440px);
+          padding: 7px 9px 8px;
+          top: max(8px, env(safe-area-inset-top));
+        }
+        #d21TournamentActiveTitle {
+          font-size: 9px;
+        }
+        #d21TournamentActiveScore,
+        .d21-tournament-active-score {
+          font-size: 9px;
+        }
+        #d21TournamentAbandon,
+        .d21-tournament-active-leave {
+          font-size: 9px;
+          padding: 5px 8px;
+        }
       }
       .d21-tournament-section-title {
         margin: 10px 0 4px;
@@ -2661,7 +2720,7 @@
     <script src="/assets/dice21-rules.js"></script>
     <script src="/assets/dice21-badge-showcase.js"></script>
     <script src="/assets/dice21-tournaments.js" defer></script>
-    <script type="module" crossorigin src="/assets/dice21-DU7nhPGz.js?v=dice21-core-lt2"></script>
+    <script type="module" crossorigin src="/assets/dice21-DU7nhPGz.js?v=dice21-core-lt5"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
   </head>
   <body>
@@ -3055,6 +3114,25 @@
       <div id="mobileSheetBody" class="mobile-sheet-body"></div>
     </div>
     <div id="ui">
+      <div
+        id="d21TournamentActive"
+        class="d21-tournament-active-banner"
+        hidden
+        aria-hidden="true"
+        role="region"
+        aria-label="Active tournament"
+      >
+        <p id="d21TournamentActiveTitle" class="d21-tournament-active-title"></p>
+        <p id="d21TournamentActiveScore" class="d21-tournament-active-score"></p>
+        <button
+          type="button"
+          class="ghost d21-tournament-active-leave"
+          id="d21TournamentAbandon"
+          title="Leave tournament"
+        >
+          Leave
+        </button>
+      </div>
       <nav id="mobileQuickBar" class="mobile-quick-bar" aria-label="Quick controls">
         <button type="button" class="mqa-btn mqa-btn-primary" id="mqaPlay" aria-label="Scroll to deal — Bet / Roll / Shake">
           Play
@@ -3116,11 +3194,6 @@
           </ul>
           <div class="lifetime-body d21-tournament-list" id="d21TournamentList"></div>
         </details>
-        <div id="d21TournamentActive" hidden aria-hidden="true">
-          <p id="d21TournamentActiveTitle" class="d21-tournament-active-title"></p>
-          <p id="d21TournamentActiveScore"></p>
-          <button type="button" class="ghost" id="d21TournamentAbandon">Leave tournament</button>
-        </div>
         <div class="btn-row" style="margin-top: 12px">
           <div class="btn-row-main">
             <div class="d21-deal-slot">
