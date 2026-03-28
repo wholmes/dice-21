@@ -832,6 +832,22 @@
         font-size: 10px !important;
         line-height: 1.35 !important;
       }
+      /* Match .lifetime-body horizontal inset; bullets sit inside padded column */
+      #d21TournamentDetails .d21-tournament-intro {
+        margin: 0 0 8px;
+        padding: 0 10px 0 26px;
+        font-size: 10px;
+        line-height: 1.4;
+        list-style: disc;
+        list-style-position: outside;
+      }
+      #d21TournamentDetails .d21-tournament-intro li {
+        margin: 0 0 5px;
+        padding-left: 2px;
+      }
+      #d21TournamentDetails .d21-tournament-intro li:last-child {
+        margin-bottom: 0;
+      }
       .d21-tournament-list {
         display: flex;
         flex-direction: column;
@@ -3092,9 +3108,12 @@
           <summary>
             <span class="label-muted">Tournaments</span> <span id="d21TournamentCount">0/5</span>
           </summary>
-          <p class="label-muted" style="margin: 0 0 8px; font-size: 10px; line-height: 1.4">
-            One <strong>career</strong> championship (lifetime stats) plus one <strong>cup per table</strong> (stats on that felt only). Best-of series, first to 2 wins — fantasy prizes; double-or-nothing off during a series.
-          </p>
+          <ul class="label-muted d21-tournament-intro" aria-label="How tournaments work">
+            <li>
+              One <strong>career</strong> championship (lifetime stats) plus one <strong>cup per table</strong> (stats on that felt only).
+            </li>
+            <li>Best-of series, first to 2 wins — fantasy prizes; double-or-nothing off during a series.</li>
+          </ul>
           <div class="lifetime-body d21-tournament-list" id="d21TournamentList"></div>
         </details>
         <div id="d21TournamentActive" hidden aria-hidden="true">

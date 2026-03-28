@@ -530,10 +530,17 @@
     init()
   }
 
+  /** True while a lifetime or table cup series is in progress (after Play for prize). */
+  function seriesActive() {
+    if (isGuest()) return false
+    return readState().run != null
+  }
+
   window.__d21TournamentAfterHand = afterHand
   window.__d21TournamentNoDouble = noDouble
   window.__d21TournamentReset = resetAll
   window.__d21TournamentGetTrophyFlags = getTrophyFlags
+  window.__d21TournamentSeriesActive = seriesActive
 
   function d21TournamentDevAllowed() {
     try {

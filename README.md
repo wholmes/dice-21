@@ -65,6 +65,7 @@ Other badges (first hand, first blood, dealer modes, pushes, lucky 7, house bust
 ### Center panel & Mode dock layout
 
 - **Center panel** (`#ui .panel`): **Totals** row (**You / Pot / House**) first; then **one row** with **Bankroll ($)** on the **left** and the **+/−** expand control for **rules & messages** on the **right**; **rule hint** and **message** sit **below** that row.
+- **Tournaments** (`<details id="d21TournamentDetails">`): Short **bulleted intro** (how career + table cups work) with horizontal padding aligned to the list below—not a single flush-left paragraph.
 - **Lower-right** (**Mode** dock, `#feltDock`): **“Dice 21”** as the title, then **Mode** (dealer rules), **Shake hint**, **Room ambience**, **Ambience DJ**.
 
 ---
@@ -194,6 +195,10 @@ There is **no** order requirement between cups—you can clear them in any order
 - **Double-or-nothing** — **Off** while a series is active.
 - **Multiplayer** — **Disabled for guests** (`window.__d21Role === 'guest'`): spectators do not see tournament UI; becoming a guest clears an in-progress run. **Hosts** and **solo** play can use tournaments.
 
+### Lighting during an active series
+
+While **`dice21_tournament_state_v1`** has an active **`run`** (after **Play for prize**, until the series ends or is abandoned), the main bundle **dims** the **hemisphere light**, the **main key point light**, and **`scene.environmentIntensity`**. **RGB strobe lights** (colors and pulse curve), the **warm accent** point light, and **back-wall emissive** pulses are **unchanged** so the room still reads colorful. Detection: **`window.__d21TournamentSeriesActive()`** in **`dice21-tournaments.js`** (guests → no dimming); the main bundle also falls back to reading **`run`** from **`localStorage`** if the hook is not ready yet.
+
 ### Defaults (edit `dice21-rules.js`)
 
 | Track | What to edit |
@@ -207,7 +212,7 @@ Authoritative storage is **`dice21_tournament_state_v1`** (JSON: `done`, `run`, 
 
 ### 3D trophy gems on the felt
 
-Cleared tournaments are shown as **real 3D gems** on the table (not a separate HTML overlay). The main bundle parents them under a scene group (**`d21TrophyRail`**) near the **player-side felt edge**. There are **five fixed slots** on the felt (even spacing), marked by **subtle gold-thread rings** on the surface; each slot is reserved for one event — **`life`**, **`t0`**, **`t1`**, **`t2`**, **`t3`** — and a gem appears **only in that slot** when that event is cleared (empty slots stay empty). Each key gets its **own silhouette and tint** (e.g. double-cone, ring, teardrop, octagon prism, cushion).
+Cleared tournaments are shown as **real 3D gems** on the table (not a separate HTML overlay). The main bundle parents them under a scene group (**`d21TrophyRail`**) near the **player-side felt edge**. There are **five fixed slots** on the felt (even spacing), marked by **very subtle stitched rings** (low-contrast torus markers on the felt). A small **TOURNAMENTS** label (canvas texture, subdued) sits above the row. Each slot is reserved for one event — **`life`**, **`t0`**, **`t1`**, **`t2`**, **`t3`** — and a gem appears **only in that slot** when that event is cleared (empty slots stay empty). The **lifetime** slot’s ring reads slightly different (cooler tint, slightly larger outer ring + **inner** ring “bullseye”). Each key gets its **own silhouette and tint** (e.g. double-cone, ring, teardrop, octagon prism, cushion); the **lifetime** gem scales slightly larger than the default.
 
 - **Slots** — Left to right: **Career (lifetime)** → **table 0 cup** → **table 1** → **table 2** → **table 3** (`life`, `t0` … `t3`).
 - **Sync** — When tournament state or felt theme updates, **`dice21-tournaments.js`** calls **`window.__d21TournamentTrophiesSync()`** (defined in the main bundle) so the 3D row matches storage. The main bundle reads flags via **`window.__d21TournamentGetTrophyFlags()`** (implemented in **`dice21-tournaments.js`**): an array of string keys **`life`**, **`t0`**, **`t1`**, … for cleared events only.
@@ -216,7 +221,7 @@ Cleared tournaments are shown as **real 3D gems** on the table (not a separate H
 
 ### Hooks from the main bundle
 
-The minified main chunk calls **`window.__d21TournamentAfterHand(outcome, pot)`** after each resolved hand (**`pot`** = that hand’s pot for player wins — used for per-table $ won), **`window.__d21TournamentNoDouble()`** to skip double-offer during a series, and **`window.__d21TournamentReset()`** on **Reset all progress**. For 3D trophies it relies on **`window.__d21TournamentGetTrophyFlags`** and exposes **`window.__d21TournamentTrophiesSync`** for **`dice21-tournaments.js`** to invoke after UI/storage updates. **`dice21-mp.js`** hides the tournaments panel for guests and fires **`d21-rolechange`** when MP role changes.
+The minified main chunk calls **`window.__d21TournamentAfterHand(outcome, pot)`** after each resolved hand (**`pot`** = that hand’s pot for player wins — used for per-table $ won), **`window.__d21TournamentNoDouble()`** to skip double-offer during a series, and **`window.__d21TournamentReset()`** on **Reset all progress**. **`window.__d21TournamentSeriesActive()`** returns **`true`** while a series is in progress (same condition as lighting dimming). For 3D trophies it relies on **`window.__d21TournamentGetTrophyFlags`** and exposes **`window.__d21TournamentTrophiesSync`** for **`dice21-tournaments.js`** to invoke after UI/storage updates. **`dice21-mp.js`** hides the tournaments panel for guests and fires **`d21-rolechange`** when MP role changes.
 
 ### Tournament dev helpers (testing only)
 
@@ -526,7 +531,7 @@ Multiplayer still needs **`mp-server`** (or equivalent) reachable where the clie
 
 ## Development notes (Dice 21 bundle)
 
-- Game logic and 3D live in the Dice 21 **main chunk** under `public/assets/` (hashed name in some builds, e.g. `main-BosaNfoM.js`; the entry script `dice21-*.js` imports it).
+- Game logic and 3D live in the Dice 21 **main chunk** under `public/assets/` (**`main-dice21-core.js`** in this repo; the entry script **`dice21-*.js`** imports it with a cache-busting query when needed).
 - **Table SFX** (impacts, shake loop, pot chip pushes, room ambience, cash register, win sting, etc.) live under **`public/audio/`**; see **[Dice 21 — audio assets (public/audio)](#dice-21--audio-assets-publicaudio)**.
 - **`npm run dj:manifest`** (see **`scripts/generate-dj-manifest.mjs`**) regenerates **`public/audio/dj/manifest.json`** before **`predev`** / **`prebuild`** so new DJ WAVs are picked up without hand-editing JSON.
 - **Bet limits** — `d21StakeTierMax()` → `__d21RulesMaxBetFor(d21TableIdx, d21WinsPhase1, D)` (or **`previewStakes`**). **`d21StakeHintText`** / **`d21StakeMeterUpdate`** reflect **stake unlock** (wins **or** bank) and **house bank** toward the next table, not a lifetime **`lsH` / `lsW`** ladder.
