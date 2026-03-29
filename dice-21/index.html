@@ -1846,6 +1846,11 @@
         position: relative;
       }
       #feltDock .felt-dock-title {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
         margin: 0 0 4px;
         width: 100%;
         font-size: 17px;
@@ -1854,6 +1859,18 @@
         color: #e8ecf4;
         text-align: right;
         line-height: 1.2;
+      }
+      #feltDock .felt-dock-title-dice {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        flex-shrink: 0;
+      }
+      #feltDock .felt-dock-die {
+        width: 1.05em;
+        height: 1.05em;
+        display: block;
+        filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
       }
       #panelHelpToggle {
         flex-shrink: 0;
@@ -3234,7 +3251,26 @@
       </div>
     </div>
     <div id="feltDock">
-      <p class="felt-dock-title">Dice 21</p>
+      <p class="felt-dock-title">
+        <span class="felt-dock-title-dice" aria-hidden="true">
+          <svg class="felt-dock-die" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false">
+            <rect x="1.5" y="1.5" width="21" height="21" rx="4.5" fill="#f2ebe0" stroke="#b9a896" stroke-width="1.25" />
+            <circle cx="8" cy="8" r="2" fill="#1e222c" />
+            <circle cx="16" cy="8" r="2" fill="#1e222c" />
+            <circle cx="12" cy="12" r="2" fill="#1e222c" />
+            <circle cx="8" cy="16" r="2" fill="#1e222c" />
+            <circle cx="16" cy="16" r="2" fill="#1e222c" />
+          </svg>
+          <svg class="felt-dock-die" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false">
+            <rect x="1.5" y="1.5" width="21" height="21" rx="4.5" fill="#f2ebe0" stroke="#b9a896" stroke-width="1.25" />
+            <circle cx="8" cy="8" r="2" fill="#1e222c" />
+            <circle cx="16" cy="16" r="2" fill="#1e222c" />
+            <circle cx="8" cy="16" r="2" fill="#1e222c" />
+            <circle cx="16" cy="8" r="2" fill="#1e222c" />
+          </svg>
+        </span>
+        <span>Dice 21</span>
+      </p>
       <!-- Felt swatches hidden: default felt is fixed; stake tier only unlocks higher bet limits + bankroll scale. -->
       <div class="felt-picker-section" hidden>
         <p class="bet-dock-label">Felt</p>
